@@ -223,6 +223,20 @@ def apply_tv_style():
     st.html(_TV_CSS)
 
 
+def _toggle_tv_mode():
+    if is_tv_mode():
+        del st.query_params["tv"]
+    else:
+        st.query_params["tv"] = "1"
+
+
+def tv_mode_button():
+    """Primary button that turns TV mode on (or off, when already in TV mode); keeps the other URL params."""
+    tv = is_tv_mode()
+    st.button("Exit TV mode" if tv else "TV mode", icon=":material/tv_off:" if tv else ":material/tv:",
+              type="primary", width="stretch", on_click=_toggle_tv_mode, key="tv_mode_toggle")
+
+
 def fullscreen_button():
     """Button that toggles browser fullscreen (Fullscreen API; needs a click, so it suits monitors).
 

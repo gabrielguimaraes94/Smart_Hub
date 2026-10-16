@@ -5,7 +5,8 @@ import os
 import glob
 
 from config import COIL_STOCK_FOLDER
-from ui import footer, fullscreen_button, is_tv_mode, kpi_card, legend, page_header, rail_title, slot_card
+from ui import (footer, fullscreen_button, is_tv_mode, kpi_card, legend, page_header, rail_title,
+                slot_card, tv_mode_button)
 
 # Function to find the latest file in folder
 def get_latest_file(directory_path):
@@ -98,12 +99,12 @@ def main():
     # Header row: title + search + fullscreen / TV-mode controls.
     # The search is kept in the URL (?q=) so a bookmarked or kiosk URL can carry it.
     if tv:
-        t, s, b = st.columns([2, 3, 1], vertical_alignment="bottom")
+        t, s, b, m = st.columns([2, 3, 1, 1], vertical_alignment="bottom")
         with t:
             st.title("Coil Storage")
     else:
         page_header("Coil Storage", "Coil positions by rail in the coil warehouse. Data refreshes every 5 minutes.")
-        s, b = st.columns([5, 1], vertical_alignment="bottom")
+        s, b, m = st.columns([4, 1, 1], vertical_alignment="bottom")
     with s:
         if "coil_search" not in st.session_state:
             st.session_state.coil_search = st.query_params.get("q", "")
@@ -118,9 +119,8 @@ def main():
             del st.query_params["q"]
     with b:
         fullscreen_button()
-        if not tv:
-            st.page_link("app_pages/Coil_Storage.py", label="TV mode", icon=":material/tv:",
-                         query_params={"tv": "1"})
+    with m:
+        tv_mode_button()
 
     live_view(query)
 
