@@ -23,7 +23,7 @@ home = st.Page("app_pages/Home.py", title="Home", icon=":material/home:", defaul
 edi_vw = st.Page("app_pages/EDI_VW_view.py", title="EDI VW View", icon=":material/insights:")
 edi_compare = st.Page("app_pages/EDI_Compare.py", title="EDI Compare", icon=":material/compare_arrows:")
 press_capacity = st.Page("app_pages/Press_capacity.py", title="Press Capacity", icon=":material/precision_manufacturing:")
-goods_receipt = st.Page("app_pages/Receiving_mat.py", title="Goods Receipt", icon=":material/local_shipping:")
+goods_receipt = st.Page("app_pages/Receiving_mat.py", title="Goods Receipt - Beta", icon=":material/local_shipping:")
 coil_storage = st.Page("app_pages/Coil_Storage.py", title="Coil Storage", icon=":material/warehouse:")
 fifo_report = st.Page("app_pages/FIFO_Report.py", title="FIFO Report - Beta", icon=":material/fact_check:")
 

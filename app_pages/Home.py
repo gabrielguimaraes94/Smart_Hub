@@ -28,7 +28,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     nav_card("receipt", "app_pages/Receiving_mat.py", "Goods Receipt",
              "Material receipts by supplier and period.",
-             ":material/local_shipping:")
+             ":material/local_shipping:", badge="BETA")
 with col2:
     nav_card("coil", "app_pages/Coil_Storage.py", "Coil Storage",
              "Position of every coil in the coil warehouse.",
