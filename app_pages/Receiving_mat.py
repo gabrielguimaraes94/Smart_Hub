@@ -6,6 +6,8 @@ import glob
 import os
 from datetime import datetime, timedelta
 
+from config import RECEIVING_FOLDER
+
 # Page configuration
 st.set_page_config(
     page_title="Goods Receipt Dashboard",
@@ -49,7 +51,7 @@ st.markdown('<p class="title">Goods Receipt Dashboard</p>', unsafe_allow_html=Tr
 @st.cache_data(ttl=timedelta(hours=1))
 def load_data():
     # Path to files
-    folder_path = r'\\ch2-file2.us.gestamp.com\PowerBI\DATA\GC2\Receiving_materials'
+    folder_path = RECEIVING_FOLDER
     
     # Check if folder exists and is accessible
     if not os.path.exists(folder_path):
@@ -322,10 +324,10 @@ else:
         st.plotly_chart(fig_top_materials, width="stretch")
 
 # Additional information at the end of the page
-st.markdown("""
+st.markdown(f"""
 ---
 ### Information
-* Data is loaded from Excel files in the folder `\\ch2-file2.us.gestamp.com\PowerBI\DATA\GC2\Receiving_materials\`
+* Data is loaded from Excel files in the folder `{RECEIVING_FOLDER}`
 * Each Invoice Number is considered a unique delivery
 * To refresh the data, reload the page
 """)
