@@ -11,26 +11,26 @@ hero(
 section_label("Demand & Production")
 col1, col2, col3 = st.columns(3)
 with col1:
-    nav_card("edi", "Pages/EDI_VW_view.py", "EDI VW View",
+    nav_card("edi", "app_pages/EDI_VW_view.py", "EDI VW View",
              "VW customer demand and production planning tracking.",
              ":material/insights:")
 with col2:
-    nav_card("press", "Pages/Press_capacity.py", "Press Capacity",
+    nav_card("press", "app_pages/Press_capacity.py", "Press Capacity",
              "Capacity and load of each press, week by week.",
              ":material/precision_manufacturing:")
 
 section_label("Materials & Warehouse")
 col1, col2, col3 = st.columns(3)
 with col1:
-    nav_card("receipt", "Pages/Receiving_mat.py", "Goods Receipt",
+    nav_card("receipt", "app_pages/Receiving_mat.py", "Goods Receipt",
              "Material receipts by supplier and period.",
              ":material/local_shipping:")
 with col2:
-    nav_card("coil", "Pages/Coil_Storage.py", "Coil Storage",
+    nav_card("coil", "app_pages/Coil_Storage.py", "Coil Storage",
              "Position of every coil in the coil warehouse.",
              ":material/warehouse:")
 with col3:
-    nav_card("fifo", "Pages/FIFO_Report.py", "FIFO Report",
+    nav_card("fifo", "app_pages/FIFO_Report.py", "FIFO Report",
              "Stock age and FIFO compliance check in shipping.",
              ":material/fact_check:", badge="BETA")
 
