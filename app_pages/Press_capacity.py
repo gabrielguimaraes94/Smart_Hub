@@ -615,24 +615,39 @@ def create_combined_machine_chart(saturation_data, machine, selected_year_weeks=
 
     return fig
 
+def expand_manual_entries(entries):
+    """One row (Year, Week, PRESS, Volume) per week of each manual entry, start and end weeks included.
+    (Same conversion as before; it only moved out of the old "Recalculate" button.)"""
+    manual_demands = []
+
+    for entry in entries:
+        start_year = int(entry['Start Week'].split('-')[0])
+        start_week = int(entry['Start Week'].split('-')[1][1:])
+        end_year = int(entry['End Week'].split('-')[0])
+        end_week = int(entry['End Week'].split('-')[1][1:])
+
+        start_date = datetime(start_year, 1, 1) + timedelta(weeks=start_week-1)
+        end_date = datetime(end_year, 1, 1) + timedelta(weeks=end_week-1)
+
+        if start_date <= end_date:
+            current_date = start_date
+            while current_date <= end_date:
+                current_year = current_date.year
+                current_week = get_week_number(current_date)
+
+                manual_demands.append({
+                    'Year': current_year,
+                    'Week': current_week,
+                    'PRESS': entry['Press'],
+                    'Volume': entry['Weekly Volume']
+                })
+
+                current_date += timedelta(weeks=1)
+
+    return pd.DataFrame(manual_demands) if manual_demands else None
+
+
 def main():
-    # Initialize state variables for tracking recalculation
-    if 'needs_recalculation' not in st.session_state:
-        st.session_state.needs_recalculation = False
-    
-    # Initialize calculation ID for forcing complete refresh
-    if 'calculation_id' not in st.session_state:
-        st.session_state.calculation_id = 0
-    
-    # Force recalculation if needed
-    if st.session_state.needs_recalculation:
-        st.session_state.needs_recalculation = False
-        st.session_state.calculation_id += 1  # Increment ID to force complete refresh
-        st.rerun()
-    
-    # Hidden element with calculation ID - forces refresh when ID changes
-    st.markdown(f'<div style="display:none">{st.session_state.calculation_id}</div>', unsafe_allow_html=True)
-    
     page_header("Press Capacity", "Weekly volume, saturation and shifts needed per press, from the VW EDI and the master data.")
 
     # Check if folder exists and list Excel files
@@ -780,7 +795,9 @@ def main():
 
             with col5:
                 if st.button("Add", key="add_manual_demand", icon=":material/add:", width="stretch"):
-                    if manual_volume > 0:
+                    if year_week_options.index(start_year_week) > year_week_options.index(end_year_week):
+                        st.warning("The start week is after the end week; nothing was added.")
+                    elif manual_volume > 0:
                         # Add to session state
                         st.session_state.manual_demands_entries.append({
                             'Press': manual_press,
@@ -790,72 +807,19 @@ def main():
                         })
                         st.toast(f"Added demand for {manual_press}", icon=":material/check:")
 
-            # Show current entries
+            # Show current entries; the charts below always include them (no recalculate step)
             if st.session_state.manual_demands_entries:
                 entries_df = pd.DataFrame(st.session_state.manual_demands_entries)
                 st.dataframe(entries_df, hide_index=True)
-
-                b1, b2, _ = st.columns([2, 1, 4])
-                with b1:
-                    recalculate = st.button("Recalculate charts", type="primary", icon=":material/refresh:",
-                                            width="stretch")
-                with b2:
-                    if st.button("Clear all", width="stretch"):
-                        st.session_state.manual_demands_entries = []
-                        st.rerun()
-
-                if recalculate:
-                    # Convert entries to manual demands format
-                    manual_demands = []
-
-                    for entry in st.session_state.manual_demands_entries:
-                        start_year = int(entry['Start Week'].split('-')[0])
-                        start_week = int(entry['Start Week'].split('-')[1][1:])
-                        end_year = int(entry['End Week'].split('-')[0])
-                        end_week = int(entry['End Week'].split('-')[1][1:])
-
-                        start_date = datetime(start_year, 1, 1) + timedelta(weeks=start_week-1)
-                        end_date = datetime(end_year, 1, 1) + timedelta(weeks=end_week-1)
-
-                        if start_date <= end_date:
-                            current_date = start_date
-                            while current_date <= end_date:
-                                current_year = current_date.year
-                                current_week = get_week_number(current_date)
-
-                                manual_demands.append({
-                                    'Year': current_year,
-                                    'Week': current_week,
-                                    'PRESS': entry['Press'],
-                                    'Volume': entry['Weekly Volume']
-                                })
-
-                                current_date += timedelta(weeks=1)
-
-                    # Convert to DataFrame
-                    manual_demands_df = pd.DataFrame(manual_demands) if manual_demands else None
-
-                    # Calculate press saturation with manual demands
-                    saturation_data = calculate_saturation(volume_data, press_sph, manual_demands_df)
-
-                    # Store in session state for use in charts
-                    st.session_state.calculated_saturation_data = saturation_data
-
-                    # Flag that we need a full recalculation to update all graphs
-                    st.session_state.needs_recalculation = True
-
+                if st.button("Clear all", icon=":material/delete:"):
+                    st.session_state.manual_demands_entries = []
                     st.rerun()
             else:
                 st.caption("No manual demand added: the charts use the EDI volume only.")
-                # Calculate without manual demands
-                saturation_data = calculate_saturation(volume_data, press_sph, None)
-                st.session_state.calculated_saturation_data = saturation_data
 
-        # Use the calculated saturation data
-        if 'calculated_saturation_data' in st.session_state:
-            saturation_data = st.session_state.calculated_saturation_data
-        else:
-            saturation_data = calculate_saturation(volume_data, press_sph, None)
+        # Saturation is recalculated on every run from the current file, SPH values and manual entries
+        manual_demands_df = expand_manual_entries(st.session_state.manual_demands_entries)
+        saturation_data = calculate_saturation(volume_data, press_sph, manual_demands_df)
 
         # Sort saturation data
         saturation_data_sorted = saturation_data.sort_values(by=['Year', 'Week', 'PRESS'])
