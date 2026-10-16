@@ -8,25 +8,17 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from config import EDI_FOLDER, PRESS_MASTER_DATA_FILE
+from ui import PRIMARY, footer, kpi_card, page_header
 
-# Page configuration - must be the first Streamlit call
-st.set_page_config(
-    layout="wide",
-    page_title="Press Capacity Calculation",
-    page_icon="🏋🏻‍♀️"
-)
+# Chart colors
+AUTO_COLOR = PRIMARY        # volume from the EDI
+MANUAL_COLOR = '#D9701E'    # manual (what-if) volume
+CAPACITY_COLOR = '#C0392B'  # weekly capacity line
 
-# Custom CSS to adjust font sizes
-st.markdown("""
-<style>
-    body {
-        font-size: 18px;
-    }
-    .stSelectbox, .stRadio, .stDateInput {
-        font-size: 16px;
-    }
-</style>
-""", unsafe_allow_html=True)
+
+def saturation_color(pct):
+    """Green below 85 %, amber up to 100 %, red above (display only)."""
+    return '#2E7D4F' if pct < 85 else ('#B7791F' if pct <= 100 else '#C0392B')
 
 # Paths to folders with Excel files and master data
 EXCEL_FOLDER = EDI_FOLDER
@@ -447,199 +439,180 @@ def create_combined_machine_chart(saturation_data, machine, selected_year_weeks=
     
     # Create figure with secondary Y axis
     fig = go.Figure()
-    
+
     # Add bars for volume (automatic)
     automatic_volume = machine_data['Volume'] - machine_data['Manual_Volume']
     fig.add_trace(
         go.Bar(
             x=week_numbers,
             y=automatic_volume.values,
-            name='Automatic Volume',
-            marker_color='rgba(58, 130, 238, 0.6)',
-            text=automatic_volume.values.astype(int),
+            name='EDI volume',
+            marker_color=AUTO_COLOR,
+            text=[f"{v:,.0f}" for v in automatic_volume.values],
             textposition='inside',
-            textfont=dict(color='white', size=14),
-            hovertemplate='Automatic Volume: %{y}<extra></extra>',
-            width=0.6  # Wider bars
+            textfont=dict(color='white', size=13),
+            textangle=0,
+            hovertemplate='EDI volume: %{y:,.0f}<extra></extra>',
+            width=0.6
         )
     )
-    
+
     # Add bars for manual volume
     fig.add_trace(
         go.Bar(
             x=week_numbers,
             y=machine_data['Manual_Volume'].values,
-            name='Manual Volume',
-            marker_color='rgba(255, 165, 0, 0.7)',
-            text=machine_data['Manual_Volume'].values.astype(int),
+            name='Manual volume',
+            marker_color=MANUAL_COLOR,
+            text=[f"{v:,.0f}" if v else "" for v in machine_data['Manual_Volume'].values],
             textposition='inside',
-            textfont=dict(color='white', size=14),
-            hovertemplate='Manual Volume: %{y}<extra></extra>',
-            width=0.6  # Wider bars
+            textfont=dict(color='white', size=13),
+            textangle=0,
+            hovertemplate='Manual volume: %{y:,.0f}<extra></extra>',
+            width=0.6
         )
     )
-    
+
     # Add line for capacity
     fig.add_trace(
         go.Scatter(
             x=week_numbers,
             y=machine_data['Capacity'].values,
             name='Capacity',
-            mode='lines+markers',  # Removed +text to avoid duplication
-            line=dict(color='red', width=3, dash='dot'),
-            marker=dict(size=8, color='red'),
+            mode='lines+markers',
+            line=dict(color=CAPACITY_COLOR, width=2, dash='dot'),
+            marker=dict(size=6, color=CAPACITY_COLOR),
             yaxis='y',
-            hovertemplate='Capacity: %{y}<extra></extra>'
+            hovertemplate='Capacity: %{y:,.0f}<extra></extra>'
         )
     )
-    
-    # Create secondary Y axis for saturation (%)
+
+    # Saturation label above each bar, colored by level
+    # (placed on the volume axis, so a week over 100 % is never cut off)
+    saturation_pct = machine_data['Saturation'].values * 100
     fig.add_trace(
         go.Scatter(
             x=week_numbers,
-            y=machine_data['Saturation'].values * 100,  # Convert to percentage
+            y=machine_data['Volume'].values,
             name='Saturation (%)',
             mode='text',
-            text=[f"{val:.0f}%" for val in machine_data['Saturation'].values * 100],
+            text=[f"<b>{val:.0f}%</b>" for val in saturation_pct],
             textposition='top center',
-            textfont=dict(color='white', size=14, family='Arial Black'),
-            yaxis='y2',
-            hovertemplate='Saturation: %{y:.1f}%<extra></extra>'
+            textfont=dict(color=[saturation_color(v) for v in saturation_pct], size=14),
+            customdata=saturation_pct,
+            showlegend=False,
+            hovertemplate='Saturation: %{customdata:.1f}%<extra></extra>'
         )
     )
-    
-    # Configure a dark background for the chart
-    bg_color = 'black'
-    grid_color = '#333333'
-    text_color = 'white'
-    
+
+    text_color = '#1F2933'
+    grid_color = '#E6EAF0'
+
     # Update layout
     fig.update_layout(
-        title=dict(
-            text=f"Line {machine}",
-            font=dict(size=24, color=text_color),
-            x=0.5
-        ),
         xaxis=dict(
-            # Remove the "Week" title to avoid duplication with "Shifts per Week"
             title=None,
-            titlefont=dict(size=14, color=text_color),
             tickmode='array',
             tickvals=week_numbers,
             ticktext=week_labels,
             tickangle=45,
-            tickfont=dict(size=12, color=text_color),
-            gridcolor=grid_color,
-            showgrid=True
+            tickfont=dict(size=12),
+            showgrid=False
         ),
         yaxis=dict(
-            title="Volume (units)",
-            titlefont=dict(size=14, color=text_color),
-            tickfont=dict(size=12, color=text_color),
+            title=dict(text="Volume (units)", font=dict(size=13)),
+            tickformat=',',
             rangemode='nonnegative',
             side='left',
             gridcolor=grid_color,
             showgrid=True
         ),
-        yaxis2=dict(
-            title="Saturation (%)",
-            titlefont=dict(size=14, color=text_color),
-            tickfont=dict(size=12, color=text_color),
-            rangemode='nonnegative',
-            overlaying='y',
-            side='right',
-            range=[0, 100],
-            showgrid=False
-        ),
         legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
-            xanchor="right",
-            x=1,
-            font=dict(color=text_color)
+            xanchor="left",
+            x=0,
         ),
         barmode='stack',
-        height=600,
-        width=1200,
-        margin=dict(t=100, b=130, l=50, r=80),
+        height=560,
+        margin=dict(t=40, b=110, l=50, r=70),
         hovermode="x unified",
-        paper_bgcolor=bg_color,
-        plot_bgcolor=bg_color,
+        font=dict(family='Inter, sans-serif', color=text_color),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='#FFFFFF',
         showlegend=True
     )
-    
+
     # Add a single capacity label far to the right side
     capacity_value = machine_data['Capacity'].values[0]
     fig.add_annotation(
         x=len(week_numbers),
         y=capacity_value,
-        text=f"{int(capacity_value)}",
+        text=f"{int(capacity_value):,}",
         showarrow=False,
-        font=dict(size=14, color="red"),
-        xshift=75,  # Increased shift to move further right
+        font=dict(size=13, color=CAPACITY_COLOR),
+        xshift=40,
         yshift=0,
-        xanchor="left"  # Align to the left of the annotation position
+        xanchor="left"
     )
-    
+
     # Add horizontal capacity line
     fig.add_shape(
         type="line",
-        x0=0.5,  
+        x0=0.5,
         x1=len(week_numbers) + 0.5,
         y0=capacity_value,
         y1=capacity_value,
         line=dict(
-            color="red",
+            color=CAPACITY_COLOR,
             width=2,
             dash="dot",
         ),
     )
-    
-    # Add shift text at bottom as yellow boxes
+
+    # Shifts needed per week, in small boxes under the bars
     turns_list = machine_data['Shifts Needed'].values
     y_pos = -max(machine_data['Volume']) * 0.15  # Vertical position for shifts
     for i in range(len(week_numbers)):
-        # Add yellow rectangle
         fig.add_shape(
             type="rect",
             x0=i + 0.7,
             x1=i + 1.3,
             y0=y_pos - max(machine_data['Volume']) * 0.05,
             y1=y_pos + max(machine_data['Volume']) * 0.05,
-            fillcolor='rgba(255, 220, 0, 0.9)',
+            fillcolor='#FFF1D6',
             opacity=1,
-            line=dict(color='white', width=1),
+            line=dict(color='#E9B949', width=1),
         )
-        
-        # Add shift value inside rectangle
+
         fig.add_annotation(
             x=i + 1,
             y=y_pos,
             text=f"{turns_list[i]:.1f}",
             showarrow=False,
-            font=dict(size=14, color='black'),
+            font=dict(size=13, color=text_color),
         )
-    
-    # Add "Shifts per Week" text further below chart
+
     fig.add_annotation(
         x=0.5,
-        y=-0.25,  # Moved further down
+        y=-0.24,
         xref="paper",
         yref="paper",
-        text="<b>Shifts per Week</b>",  # Using HTML bold tag instead of weight property
+        text="<b>Shifts per week</b>",
         showarrow=False,
-        font=dict(size=14, color=text_color, family="Arial"),
+        font=dict(size=13, color=text_color),
         align="center"
     )
-    
-    # Adjust Y axis limits to include shifts and increase bottom margin
+
+    # Y axis: room below for the shift boxes, and on top for the capacity line and the saturation labels
+    top = max(max(machine_data['Volume']), capacity_value) * 1.12
     fig.update_layout(
         yaxis=dict(
-            range=[y_pos - max(machine_data['Volume']) * 0.1, max(machine_data['Volume']) * 1.1]
+            range=[y_pos - max(machine_data['Volume']) * 0.1, top]
         )
     )
-    
+
     return fig
 
 def main():
@@ -660,7 +633,7 @@ def main():
     # Hidden element with calculation ID - forces refresh when ID changes
     st.markdown(f'<div style="display:none">{st.session_state.calculation_id}</div>', unsafe_allow_html=True)
     
-    st.title("EDI VW Analysis - Weekly Calculations and Volume")
+    page_header("Press Capacity", "Weekly volume, saturation and shifts needed per press, from the VW EDI and the master data.")
 
     # Check if folder exists and list Excel files
     try:
@@ -680,19 +653,16 @@ def main():
         st.error(f"No Excel files found in folder: {EXCEL_FOLDER}")
         return
     
-    # Interface for file selection, pre-selecting the newest (index 0)
-    selected_file = st.selectbox("Select Excel file", excel_files, index=0)
-    
-    # SPH values configuration for each press
-    st.subheader("Press Capacity Configuration")
-    col1, col2, col3 = st.columns(3)
-    
+    # Settings in one row: EDI file (newest pre-selected) | SPH per press
+    c_file, col1, col2, col3 = st.columns([3, 1, 1, 1], vertical_alignment="bottom")
+    with c_file:
+        selected_file = st.selectbox("EDI file", excel_files, index=0)
     with col1:
-        sph_press1 = st.number_input("SPH PRESS1", min_value=1, value=200)
+        sph_press1 = st.number_input("SPH PRESS1", min_value=1, value=200, help="Strokes per hour")
     with col2:
-        sph_press2 = st.number_input("SPH PRESS2", min_value=1, value=220)
+        sph_press2 = st.number_input("SPH PRESS2", min_value=1, value=220, help="Strokes per hour")
     with col3:
-        sph_blnk = st.number_input("SPH BLNK", min_value=1, value=750)
+        sph_blnk = st.number_input("SPH BLNK", min_value=1, value=750, help="Strokes per hour")
     
     # Create dictionary with SPH values
     press_sph = {
@@ -704,15 +674,17 @@ def main():
     # Calculate PRESS3 SPH as sum of PRESS1 and PRESS2
     press_sph['PRESS3'] = sph_press1 + sph_press2
     
-    # Show weekly capacity for each press
-    st.write("Weekly capacity for each press (SPH × 168):")
-    capacity_df = pd.DataFrame({
-        'Press': press_sph.keys(),
-        'SPH': press_sph.values(),
-        'Weekly Capacity': [sph * 168 for sph in press_sph.values()]
-    })
-    st.dataframe(capacity_df, width=800)
-    
+    # Weekly capacity for each press (SPH × 168)
+    machines = ['BLNK', 'PRESS3', 'PRESS1', 'PRESS2']
+    cap_cols = st.columns(len(machines))
+    for col, press in zip(cap_cols, machines):
+        with col:
+            kpi_card(f"{press} weekly capacity", f"{press_sph[press] * 168:,}",
+                     help=f"SPH {press_sph[press]:,} × 168 h" + (" (PRESS1 + PRESS2)" if press == 'PRESS3' else ""))
+
+    # Week range selectors are drawn here, filled in once the weeks are known
+    range_box = st.container()
+
     # Load master data
     master_data = load_master_data()
     if master_data is None:
@@ -765,23 +737,24 @@ def main():
         # Calculate volume based on master data
         volume_data = calculate_volume(weekly_data, master_data)
         
-        if volume_data is not None:
-            # Manual demand section - simplified version
-            st.markdown("---")
-            st.subheader("Add Manual Demand")
-            
+        if volume_data is None:
+            return
+
+        # Manual demand (what-if) section
+        with st.expander("What-if: manual demand", icon=":material/edit_note:",
+                         expanded=bool(st.session_state.get('manual_demands_entries'))):
+            st.caption("Add extra weekly volume to a press for a range of weeks; it is stacked on top of the EDI volume.")
+
             # Initialize session state for manual demands if not exists
             if 'manual_demands_entries' not in st.session_state:
                 st.session_state.manual_demands_entries = []
-            
+
             # Get current week as default
             current_date = datetime.now()
-            current_week_num = get_week_number(current_date)
-            current_week_str = f"{current_date.year}-W{current_week_num:02d}"
-            
+
             # Create options for year-week selection (only up to 1 year ahead)
             year_week_options = []
-            
+
             # Start from current week
             temp_date = current_date
             for _ in range(52):  # 1 year worth of weeks
@@ -789,37 +762,24 @@ def main():
                 week = get_week_number(temp_date)
                 year_week_options.append(f"{year}-W{week:02d}")
                 temp_date += timedelta(weeks=1)
-            
+
             # Single entry form
-            col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 1])
-            
+            col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 1], vertical_alignment="bottom")
+
             with col1:
                 manual_press = st.selectbox("Press", ['PRESS1', 'PRESS2', 'BLNK'])
-            
+
             with col2:
-                start_year_week = st.selectbox(
-                    "Start Week", 
-                    year_week_options,
-                    index=0  # Current week
-                )
-            
+                start_year_week = st.selectbox("Start week", year_week_options, index=0)
+
             with col3:
-                end_year_week = st.selectbox(
-                    "End Week", 
-                    year_week_options,
-                    index=0  # Current week
-                )
-            
+                end_year_week = st.selectbox("End week", year_week_options, index=0)
+
             with col4:
-                manual_volume = st.number_input(
-                    "Weekly Volume", 
-                    min_value=0, 
-                    value=0, 
-                    step=100
-                )
-            
+                manual_volume = st.number_input("Weekly volume", min_value=0, value=0, step=100)
+
             with col5:
-                if st.button("Add", key="add_manual_demand"):
+                if st.button("Add", key="add_manual_demand", icon=":material/add:", width="stretch"):
                     if manual_volume > 0:
                         # Add to session state
                         st.session_state.manual_demands_entries.append({
@@ -828,132 +788,123 @@ def main():
                             'End Week': end_year_week,
                             'Weekly Volume': manual_volume
                         })
-                        st.success(f"✓ Added demand for {manual_press}")
-            
+                        st.toast(f"Added demand for {manual_press}", icon=":material/check:")
+
             # Show current entries
             if st.session_state.manual_demands_entries:
-                st.markdown("### Manual Demands")
                 entries_df = pd.DataFrame(st.session_state.manual_demands_entries)
-                
-                # Display table with remove option
-                col1, col2 = st.columns([4, 1])
-                
-                with col1:
-                    st.dataframe(entries_df, width="stretch")
-                
-                with col2:
-                    if st.button("Clear All"):
+                st.dataframe(entries_df, hide_index=True)
+
+                b1, b2, _ = st.columns([2, 1, 4])
+                with b1:
+                    recalculate = st.button("Recalculate charts", type="primary", icon=":material/refresh:",
+                                            width="stretch")
+                with b2:
+                    if st.button("Clear all", width="stretch"):
                         st.session_state.manual_demands_entries = []
                         st.rerun()
-                
-                # Calculate button
-                if st.button("Recalculate Graphs", type="primary"):
+
+                if recalculate:
                     # Convert entries to manual demands format
                     manual_demands = []
-                    
+
                     for entry in st.session_state.manual_demands_entries:
                         start_year = int(entry['Start Week'].split('-')[0])
                         start_week = int(entry['Start Week'].split('-')[1][1:])
                         end_year = int(entry['End Week'].split('-')[0])
                         end_week = int(entry['End Week'].split('-')[1][1:])
-                        
+
                         start_date = datetime(start_year, 1, 1) + timedelta(weeks=start_week-1)
                         end_date = datetime(end_year, 1, 1) + timedelta(weeks=end_week-1)
-                        
+
                         if start_date <= end_date:
                             current_date = start_date
                             while current_date <= end_date:
                                 current_year = current_date.year
                                 current_week = get_week_number(current_date)
-                                
+
                                 manual_demands.append({
                                     'Year': current_year,
                                     'Week': current_week,
                                     'PRESS': entry['Press'],
                                     'Volume': entry['Weekly Volume']
                                 })
-                                
+
                                 current_date += timedelta(weeks=1)
-                    
+
                     # Convert to DataFrame
                     manual_demands_df = pd.DataFrame(manual_demands) if manual_demands else None
-                    
+
                     # Calculate press saturation with manual demands
                     saturation_data = calculate_saturation(volume_data, press_sph, manual_demands_df)
-                    
+
                     # Store in session state for use in charts
                     st.session_state.calculated_saturation_data = saturation_data
-                    
+
                     # Flag that we need a full recalculation to update all graphs
                     st.session_state.needs_recalculation = True
-                    
-                    st.success("✓ Graphs updated with manual demands!")
+
                     st.rerun()
             else:
-                st.info("No manual demands added. Using only automatic demands.")
+                st.caption("No manual demand added: the charts use the EDI volume only.")
                 # Calculate without manual demands
                 saturation_data = calculate_saturation(volume_data, press_sph, None)
                 st.session_state.calculated_saturation_data = saturation_data
-            
-            # Use the calculated saturation data
-            if 'calculated_saturation_data' in st.session_state:
-                saturation_data = st.session_state.calculated_saturation_data
-            else:
-                saturation_data = calculate_saturation(volume_data, press_sph, None)
-            
-            # Sort saturation data
-            saturation_data_sorted = saturation_data.sort_values(by=['Year', 'Week', 'PRESS'])
-            
-            # Get all year-week combinations for the selection
-            all_year_weeks = get_all_year_week_combinations(saturation_data_sorted)
-            
-            # Create a string representation for each year-week for display
-            year_week_strings = [f"{year}-W{week:02d}" for year, week in all_year_weeks]
-            
-            # Create "From" and "To" selectors for date range
-            st.subheader("Select Date Range")
-            col1, col2 = st.columns(2)
-            
+
+        # Use the calculated saturation data
+        if 'calculated_saturation_data' in st.session_state:
+            saturation_data = st.session_state.calculated_saturation_data
+        else:
+            saturation_data = calculate_saturation(volume_data, press_sph, None)
+
+        # Sort saturation data
+        saturation_data_sorted = saturation_data.sort_values(by=['Year', 'Week', 'PRESS'])
+
+        # Get all year-week combinations for the selection
+        all_year_weeks = get_all_year_week_combinations(saturation_data_sorted)
+
+        # Create a string representation for each year-week for display
+        year_week_strings = [f"{year}-W{week:02d}" for year, week in all_year_weeks]
+
+        # "From" and "To" week selectors, shown under the capacity cards
+        with range_box:
+            col1, col2, col3 = st.columns([1, 1, 2], vertical_alignment="bottom")
+
             with col1:
-                start_index = 0  # Default to first week
-                from_week = st.selectbox("From Week/Year", 
-                                        options=year_week_strings,
-                                        index=start_index,
-                                        key="from_week")
-                
+                from_week = st.selectbox("From week", options=year_week_strings, index=0, key="from_week")
+
             with col2:
                 end_index = min(10, len(year_week_strings) - 1)  # Default to show 10 weeks or all if less
-                to_week = st.selectbox("To Week/Year", 
-                                      options=year_week_strings,
-                                      index=end_index,
-                                      key="to_week")
-            
+                to_week = st.selectbox("To week", options=year_week_strings, index=end_index, key="to_week")
+
             # Get indices of selected weeks
             from_index = year_week_strings.index(from_week)
             to_index = year_week_strings.index(to_week)
-            
+
             # Ensure from_index is not greater than to_index
             if from_index > to_index:
-                st.warning("'From' date is after 'To' date. Adjusting selection.")
+                st.warning("'From' week is after 'To' week. Adjusting selection.")
                 from_index, to_index = to_index, from_index
-            
+
             # Get the selected year-week combinations
             selected_year_weeks = all_year_weeks[from_index:to_index+1]
-            
-            # Display number of weeks selected
-            st.info(f"Selected {len(selected_year_weeks)} weeks from {from_week} to {to_week}")
-            
-            # Get unique machines list and order them as requested
-            machines = ['BLNK', 'PRESS3', 'PRESS1', 'PRESS2']
-            
-            # For each machine, create a combined chart
-            for machine in machines:
-                # Check if the machine exists in the data
-                if machine in saturation_data_sorted['PRESS'].unique():
-                    st.markdown(f"### Analysis for Machine {machine}")
-                    fig = create_combined_machine_chart(saturation_data_sorted, machine, selected_year_weeks)
+
+            with col3:
+                st.caption(f"{len(selected_year_weeks)} weeks selected · file {selected_file}")
+
+        # One combined chart per machine
+        for machine in machines:
+            # Check if the machine exists in the data
+            if machine in saturation_data_sorted['PRESS'].unique():
+                st.subheader(machine)
+                fig = create_combined_machine_chart(saturation_data_sorted, machine, selected_year_weeks)
+                if fig is not None:
                     st.plotly_chart(fig, width="stretch")
-                    st.markdown("---")  # Separator between charts
+
+        st.caption("Saturation = weekly volume ÷ weekly capacity (SPH × 168 h); shifts needed = saturation × 21. "
+                   "PRESS3 = PRESS1 + PRESS2. The first week of the EDI file is left out.")
+        footer(datetime.fromtimestamp(os.path.getmtime(file_path)))
+
 
 if __name__ == "__main__":
     main()
