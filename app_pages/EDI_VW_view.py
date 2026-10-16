@@ -7,7 +7,7 @@ from pathlib import Path
 from config import EDI_FOLDER
 from datetime import datetime, timedelta
 
-from ui import footer, fullscreen_button, kpi_card, page_header, tv_mode_button
+from ui import footer, kpi_card, page_header
 
 # Path to the folder with Excel files
 EXCEL_FOLDER = EDI_FOLDER
@@ -187,13 +187,7 @@ def get_file_creation_date(file_path):
     return os.path.getctime(file_path)
 
 def main():
-    h, b, m = st.columns([6, 1, 1], vertical_alignment="bottom")
-    with h:
-        page_header("EDI VW View", "VW customer releases (EDI) by car model.")
-    with b:
-        fullscreen_button()
-    with m:
-        tv_mode_button()
+    page_header("EDI VW View", "VW customer releases (EDI) by car model.")
 
     excel_files = [f for f in os.listdir(EXCEL_FOLDER) if f.endswith('.xlsx')]
     if not excel_files:
