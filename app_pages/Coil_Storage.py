@@ -5,7 +5,7 @@ import os
 import glob
 
 from config import COIL_STOCK_FOLDER
-from ui import footer, kpi_card, legend, page_header, rail_title, slot_card
+from ui import footer, fullscreen_button, is_tv_mode, kpi_card, legend, page_header, rail_title, slot_card
 
 # Function to find the latest file in folder
 def get_latest_file(directory_path):
@@ -88,10 +88,47 @@ def format_weight(value):
     except (TypeError, ValueError):
         return value
 
+DISPLAY_POSITIONS = 7  # positions drawn per rail (rail F has 8 in rail_positions; only 7 are shown)
+
+
 # Main interface
 def main():
-    page_header("Coil Storage", "Coil positions by rail in the coil warehouse. The page refreshes every 5 minutes.")
+    tv = is_tv_mode()
 
+    # Header row: title + search + fullscreen / TV-mode controls.
+    # The search is kept in the URL (?q=) so a bookmarked or kiosk URL can carry it.
+    if tv:
+        t, s, b = st.columns([2, 3, 1], vertical_alignment="bottom")
+        with t:
+            st.title("Coil Storage")
+    else:
+        page_header("Coil Storage", "Coil positions by rail in the coil warehouse. Data refreshes every 5 minutes.")
+        s, b = st.columns([5, 1], vertical_alignment="bottom")
+    with s:
+        if "coil_search" not in st.session_state:
+            st.session_state.coil_search = st.query_params.get("q", "")
+        query = st.text_input(
+            "Search", key="coil_search",
+            placeholder="Material, label or position (e.g. DX54, 9912…, RA-01)",
+            icon=":material/search:",
+        ).strip()
+        if query:
+            st.query_params["q"] = query
+        elif "q" in st.query_params:
+            del st.query_params["q"]
+    with b:
+        fullscreen_button()
+        if not tv:
+            st.page_link("app_pages/Coil_Storage.py", label="TV mode", icon=":material/tv:",
+                         query_params={"tv": "1"})
+
+    live_view(query)
+
+
+# Re-reads the file and redraws KPIs + map every 5 minutes without reloading the page,
+# so fullscreen and the typed search are kept.
+@st.fragment(run_every="5m")
+def live_view(query):
     # Header section for important information
     rail_positions = {
         'A': 7, 'B': 7, 'C': 7, 'D': 7, 'E': 7, 'F': 8, 'G': 7, 'H': 7
@@ -105,23 +142,11 @@ def main():
             for i in range(1, num_positions + 1)
             if not get_position_data(df, f"R{rail}-{str(i).zfill(2)}").empty
         )
-    
-    # Search + KPI row. The search is kept in the URL (?q=) so it survives the 5-minute auto-refresh.
+
+    # KPI row
     free_positions = total_positions - occupied_positions
     occupancy = occupied_positions / total_positions if total_positions else 0
-    s, k1, k2, k3 = st.columns([2, 1, 1, 1], vertical_alignment="bottom")
-    with s:
-        if "coil_search" not in st.session_state:
-            st.session_state.coil_search = st.query_params.get("q", "")
-        query = st.text_input(
-            "Search", key="coil_search",
-            placeholder="Material, label or position (e.g. DX54, 9912…, RA-01)",
-            icon=":material/search:",
-        ).strip()
-        if query:
-            st.query_params["q"] = query
-        elif "q" in st.query_params:
-            del st.query_params["q"]
+    k1, k2, k3 = st.columns(3)
     with k1:
         kpi_card("Occupied positions", f"{occupied_positions}/{total_positions}")
     with k2:
@@ -133,8 +158,8 @@ def main():
     if df is not None:
         if query:
             found = []
-            for rail, n in rail_positions.items():
-                for i in range(1, n + 1):
+            for rail in rail_positions:
+                for i in range(1, DISPLAY_POSITIONS + 1):  # only positions drawn on screen
                     position = f"R{rail}-{str(i).zfill(2)}"
                     rows = get_position_data(df, position)
                     if rows.empty:
@@ -147,17 +172,10 @@ def main():
             else:
                 st.warning(f"No coil matches “{query}”.", icon=":material/search_off:")
         legend([("Occupied", "#2E7D4F"), ("Empty", "#C5CCD5"), ("Search match", "#EAF1FB; box-shadow: inset 0 0 0 2px #20416C")])
-        create_rail_layout(df, rail_positions.keys(), 7, query)  # Adjust the number of positions as needed
+        create_rail_layout(df, rail_positions.keys(), DISPLAY_POSITIONS, query)
 
     footer()
 
-    # Add auto-refresh using HTML meta tag
-    st.markdown(
-        """
-        <meta http-equiv="refresh" content="300">
-        """,
-        unsafe_allow_html=True
-    )
 
 if __name__ == "__main__":
     main()

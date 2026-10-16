@@ -188,6 +188,70 @@ def legend(items):
     st.html(f'<div class="legend">{spans}</div>')
 
 
+def is_tv_mode():
+    """TV mode is turned on with ?tv=1 in the URL (e.g. a kiosk browser on a shop-floor TV)."""
+    return st.query_params.get("tv") == "1"
+
+
+_TV_CSS = """
+<style>
+/* TV mode (?tv=1): no sidebar / toolbar, full width, compact slots so a whole map fits a 1080p screen */
+section[data-testid="stSidebar"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="stExpandSidebarButton"],
+header[data-testid="stHeader"] { display: none !important; }
+[data-testid="stMainBlockContainer"] {
+    padding-top: 1rem !important;
+    padding-bottom: 0.5rem !important;
+    max-width: 100% !important;
+}
+[data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"] { gap: 0.45rem !important; }
+.slot { min-height: 84px !important; padding: 4px 8px !important; margin-bottom: 0 !important;
+        font-size: 0.74rem !important; line-height: 1.28 !important; }
+.slot .pos { font-size: 0.8rem; }
+.rail-title { margin-bottom: 2px; padding-bottom: 4px; }
+[data-testid="stMetric"] { padding: 6px 14px !important; }
+[data-testid="stMetricValue"] { font-size: 1.4rem !important; }
+.legend { margin: 0; }
+h1 { padding-top: 0 !important; padding-bottom: 0 !important; }
+</style>
+"""
+
+
+def apply_tv_style():
+    """Inject the TV-mode CSS. Called by the entry point when ?tv=1."""
+    st.html(_TV_CSS)
+
+
+def fullscreen_button():
+    """Button that toggles browser fullscreen (Fullscreen API; needs a click, so it suits monitors).
+
+    For a permanent TV prefer a kiosk browser: chrome --kiosk "<url>?tv=1".
+    """
+    st.html(
+        """
+        <button class="hub-fs-btn" type="button">&#x26F6;&nbsp; Fullscreen</button>
+        <script>
+        // Inline onclick attributes are stripped by st.html, so bind the handler here.
+        document.querySelectorAll(".hub-fs-btn").forEach(function (b) {
+            b.onclick = function () {
+                if (document.fullscreenElement) { document.exitFullscreen(); }
+                else { document.documentElement.requestFullscreen(); }
+            };
+        });
+        </script>
+        <style>
+        .hub-fs-btn {
+            width: 100%; height: 2.5rem; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 500;
+            color: #FFFFFF; background: #20416C; border: 1px solid #20416C; border-radius: 0.5rem;
+        }
+        .hub-fs-btn:hover { background: #2E5C96; }
+        </style>
+        """,
+        unsafe_allow_javascript=True,
+    )
+
+
 def sample_data_notice():
     """Discreet banner shown on every page while USE_SAMPLE_DATA is on."""
     st.html(
