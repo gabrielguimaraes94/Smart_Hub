@@ -5,6 +5,8 @@ import os
 import glob
 import plotly.express as px
 
+from config import FIFO_FOLDER
+
 # ---------- Configuração da Página ----------
 st.set_page_config(
     page_title="Controle FIFO - Shipping",
@@ -30,7 +32,7 @@ def get_latest_file(directory_path):
 
 def load_data():
     try:
-        directory = r"\\ch2-python\powerBI\Data\GC2\FIFO"
+        directory = FIFO_FOLDER
         latest_file = get_latest_file(directory)
 
         if latest_file is None:
