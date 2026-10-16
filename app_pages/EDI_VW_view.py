@@ -178,7 +178,67 @@ def create_production_chart(df, view_type='daily', start_date=None, end_date=Non
             tickformat='%Y-%m-%d'
         )
 
+    # Total of each day/week above its stacked bar (display only: sum of the bars already drawn)
+    if not chart_data.empty:
+        totals = chart_data.groupby(x_axis)['Release Qty'].sum().reset_index()
+        fig.add_trace(go.Scatter(
+            x=totals[x_axis],
+            y=totals['Release Qty'],
+            mode='text',
+            text=[f"<b>{v:,.0f}</b>" for v in totals['Release Qty']],
+            textposition='top center',
+            textfont=dict(size=12, color='#1F2933'),
+            showlegend=False,
+            hoverinfo='skip',
+        ))
+        fig.update_yaxes(range=[0, totals['Release Qty'].max() * 1.1])
+
     return fig
+
+def compare_with_previous(df, excel_files, selected_file, start_date, end_date):
+    """Change per model vs the previous (older) EDI file, over the dates both files cover.
+
+    Returns ({model or '__total__': (delta, pct or None)}, note). Uses the same loading and
+    processing as the selected file; nothing is written back.
+    """
+    idx = excel_files.index(selected_file)
+    if idx + 1 >= len(excel_files):
+        return {}, "No previous EDI file to compare with."
+    prev_name = excel_files[idx + 1]
+    try:
+        prev = process_data(load_excel_file(Path(EXCEL_FOLDER) / prev_name))
+    except Exception as e:
+        return {}, f"Could not read the previous EDI file {prev_name}: {e}"
+    if prev is None or prev.empty:
+        return {}, f"The previous EDI file {prev_name} has no usable data."
+
+    lo = max(start_date, df['Date'].min().date(), prev['Date'].min().date())
+    hi = min(end_date, df['Date'].max().date(), prev['Date'].max().date())
+    if lo > hi:
+        return {}, f"The previous EDI file {prev_name} has no dates in the selected period."
+
+    def totals(d):
+        in_range = d[(d['Date'].dt.date >= lo) & (d['Date'].dt.date <= hi)]
+        return in_range.groupby('Car Model')['Release Qty'].sum()
+
+    cur, old = totals(df), totals(prev)
+    deltas = {}
+    for model in set(cur.index) | set(old.index):
+        c, o = cur.get(model, 0), old.get(model, 0)
+        deltas[model] = (c - o, (c - o) / o if o else None)
+    tc, to = cur.sum(), old.sum()
+    deltas['__total__'] = (tc - to, (tc - to) / to if to else None)
+    note = (f"Change vs the previous EDI file {prev_name}, compared only over the dates both files "
+            f"cover ({lo:%b %d} – {hi:%b %d, %Y}).")
+    return deltas, note
+
+def format_delta(delta):
+    """('+1,240 (+3.6%)', delta_color) for st.metric; neutral grey when there is no change."""
+    if delta is None:
+        return None, "normal"
+    d, pct = delta
+    text = f"{d:+,.0f}" + (f" ({pct:+.1%})" if pct is not None else "")
+    return text, ("off" if d == 0 else "normal")
 
 def get_file_creation_date(file_path):
     """
@@ -240,13 +300,18 @@ def main():
 
         total_production = df[(df['Date'].dt.date >= start_date) & (df['Date'].dt.date <= end_date)].groupby('Car Model')['Release Qty'].sum().sort_values(ascending=False)
 
-        # KPI cards: the same totals as the table below, plus their sum
+        # KPI cards: the same totals as the table below, plus their sum,
+        # each with its change vs the previous EDI file (over the overlapping dates)
+        deltas, compare_note = compare_with_previous(df, excel_files, selected_file, start_date, end_date)
         kpi_cols = st.columns(1 + len(total_production))
         with kpi_cols[0]:
-            kpi_card("Total releases", f"{total_production.sum():,.0f}")
+            text, color = format_delta(deltas.get('__total__'))
+            kpi_card("Total releases", f"{total_production.sum():,.0f}", delta=text, delta_color=color)
         for col, (model, qty) in zip(kpi_cols[1:], total_production.items()):
             with col:
-                kpi_card(model, f"{qty:,.0f}")
+                text, color = format_delta(deltas.get(model))
+                kpi_card(model, f"{qty:,.0f}", delta=text, delta_color=color)
+        st.caption(compare_note)
 
         chart = create_production_chart(df, view_type.lower(), start_date, end_date)
         st.plotly_chart(chart, width="stretch")
