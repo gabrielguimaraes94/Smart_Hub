@@ -7,20 +7,7 @@ from pathlib import Path
 from config import EDI_FOLDER
 from datetime import datetime, timedelta
 
-# Set page to wide mode
-st.set_page_config(layout="wide")
-
-# Custom CSS to adjust font sizes
-st.markdown("""
-<style>
-    body {
-        font-size: 18px;
-    }
-    .stSelectbox, .stRadio, .stDateInput {
-        font-size: 16px;
-    }
-</style>
-""", unsafe_allow_html=True)
+from ui import footer, fullscreen_button, kpi_card, page_header, tv_mode_button
 
 # Path to the folder with Excel files
 EXCEL_FOLDER = EDI_FOLDER
@@ -34,13 +21,13 @@ CAR_MODELS = {
     '3CS 809 605': 'Coupe NF'
 }
 
-# Color scheme for each car model
+# Color scheme for each car model: MEB in Gestamp blue, Atlas family in blues, Coupe family in oranges
 COLOR_SCHEME = {
-    'MEB': 'rgb(31, 119, 180)',
-    'Coupe': 'rgb(255, 127, 14)',
-    'Atlas': 'rgb(44, 160, 44)',
-    'Coupe NF': 'rgb(214, 39, 40)',
-    'Atlas NF': 'rgb(148, 103, 189)'
+    'MEB': '#20416C',
+    'Atlas': '#3F7CC4',
+    'Atlas NF': '#93B9E6',
+    'Coupe': '#D9701E',
+    'Coupe NF': '#F2B27A'
 }
 
 def load_excel_file(file_path):
@@ -151,27 +138,26 @@ def create_production_chart(df, view_type='daily', start_date=None, end_date=Non
             text=model_data['Release Qty'],
             textposition='inside',
             insidetextanchor='middle',
-            textfont=dict(color='white', size=14),
+            textfont=dict(color='#1F2933' if model in ('Atlas NF', 'Coupe NF') else 'white', size=12),
+            hovertemplate=f"<b>{model}</b><br>%{{x}}<br>%{{y:,}} pcs<extra></extra>",
         ))
 
     fig.update_layout(
-        title={
-            'text': "Production Chart",
-            'y':0.95,
-            'x':0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
-        },
         xaxis_title=x_title,
-        yaxis_title="Quantity Produced",
-        legend_title_text='Car Models',
-        height=600,
+        yaxis_title="Release quantity (pcs)",
+        height=560,
         barmode='stack',
-        yaxis=dict(rangemode='nonnegative'),
+        bargap=0.25,
+        yaxis=dict(rangemode='nonnegative', gridcolor='#E6EAF0', tickformat=','),
         legend=dict(
-            font=dict(size=16),
-            itemsizing='constant'
+            orientation='h', yanchor='bottom', y=1.02, xanchor='left', x=0,
+            font=dict(size=14), itemsizing='constant', title_text='', traceorder='normal',
         ),
+        uniformtext=dict(minsize=10, mode='hide'),
+        margin=dict(t=40, b=10, l=10, r=10),
+        font=dict(family='Inter, sans-serif', color='#1F2933'),
+        plot_bgcolor='#FFFFFF',
+        paper_bgcolor='rgba(0,0,0,0)',
     )
 
     if view_type == 'weekly':
@@ -201,7 +187,13 @@ def get_file_creation_date(file_path):
     return os.path.getctime(file_path)
 
 def main():
-    st.title("EDI VW Analysis")
+    h, b, m = st.columns([6, 1, 1], vertical_alignment="bottom")
+    with h:
+        page_header("EDI VW View", "VW customer releases (EDI) by car model.")
+    with b:
+        fullscreen_button()
+    with m:
+        tv_mode_button()
 
     excel_files = [f for f in os.listdir(EXCEL_FOLDER) if f.endswith('.xlsx')]
     if not excel_files:
@@ -213,11 +205,12 @@ def main():
     excel_files_with_dates.sort(key=lambda x: x[1], reverse=True)  # Ordena pelo timestamp (mais recente primeiro)
     excel_files = [f[0] for f in excel_files_with_dates]  # Extrai apenas os nomes dos arquivos ordenados
     
-    col1, col2, col3 = st.columns(3)
+    # Controls in one row: file | view | start | end
+    col1, col_view, col_start, col_end = st.columns([3, 2, 2, 2], vertical_alignment="bottom")
     with col1:
-        selected_file = st.selectbox("Select Excel file", excel_files, index=0)
-    with col2:
-        view_type = st.radio("Select view", ('Daily', 'Weekly'))
+        selected_file = st.selectbox("EDI file", excel_files, index=0)
+    with col_view:
+        view_type = st.radio("View", ('Daily', 'Weekly'), horizontal=True)
     
     if selected_file:
         file_path = Path(EXCEL_FOLDER) / selected_file
@@ -238,31 +231,43 @@ def main():
         default_end_date = min(max_date, min_date + timedelta(days=30))
 
         # Date range selection
-        with col1:
-            start_date = st.date_input("Start Date", min_date, min_value=min_date, max_value=max_date)
-        with col2:
-            end_date = st.date_input("End Date", default_end_date, min_value=min_date, max_value=max_date)
-        
+        with col_start:
+            start_date = st.date_input("Start date", min_date, min_value=min_date, max_value=max_date)
+        with col_end:
+            end_date = st.date_input("End date", default_end_date, min_value=min_date, max_value=max_date)
+
         if start_date > end_date:
             st.error("Error: End date must fall after start date.")
             return
-        
-        st.write(f"Date range: {start_date} to {end_date}")
+
+        received = datetime.fromtimestamp(get_file_creation_date(file_path))
+        st.caption(f"Showing {start_date:%b %d, %Y} – {end_date:%b %d, %Y} · "
+                   f"file {selected_file}, received {received:%b %d, %Y %H:%M}")
+
+        total_production = df[(df['Date'].dt.date >= start_date) & (df['Date'].dt.date <= end_date)].groupby('Car Model')['Release Qty'].sum().sort_values(ascending=False)
+
+        # KPI cards: the same totals as the table below, plus their sum
+        kpi_cols = st.columns(1 + len(total_production))
+        with kpi_cols[0]:
+            kpi_card("Total releases", f"{total_production.sum():,.0f}")
+        for col, (model, qty) in zip(kpi_cols[1:], total_production.items()):
+            with col:
+                kpi_card(model, f"{qty:,.0f}")
 
         chart = create_production_chart(df, view_type.lower(), start_date, end_date)
         st.plotly_chart(chart, width="stretch")
 
-        st.subheader("Total Production by Model")
-        total_production = df[(df['Date'].dt.date >= start_date) & (df['Date'].dt.date <= end_date)].groupby('Car Model')['Release Qty'].sum().sort_values(ascending=False)
-        
-        # Create a DataFrame for better formatting
-        total_production_df = pd.DataFrame({'Car Model': total_production.index, 'Total Production': total_production.values})
-        
-        # Display the DataFrame as a styled table
-        st.dataframe(total_production_df.style
-                     .format({'Total Production': '{:,.0f}'})
-                     .set_properties(**{'font-size': '16px'}), 
-                     width=600)
+        with st.expander("Total production by model (table)"):
+            # Create a DataFrame for better formatting
+            total_production_df = pd.DataFrame({'Car Model': total_production.index, 'Total Production': total_production.values})
+
+            # Display the DataFrame as a styled table
+            st.dataframe(total_production_df.style
+                         .format({'Total Production': '{:,.0f}'})
+                         .set_properties(**{'font-size': '16px'}),
+                         width=600, hide_index=True)
+
+        footer(received)
 
 if __name__ == "__main__":
     main()
