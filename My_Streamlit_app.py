@@ -1,8 +1,19 @@
+from pathlib import Path
+
 import streamlit as st
+
+from ui import apply_base_style
 
 # Entry point: defines the app pages and the sidebar navigation.
 # Page content lives in Pages/; the hub landing page is Pages/Home.py.
 st.set_page_config(page_title="Functionality Hub", layout="wide")
+
+# Logo at the top of the sidebar on every page (local asset if present, else the public URL)
+LOGO_FILE = Path(__file__).parent / "assets" / "gestamp_logo.png"
+LOGO_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Gestamp_Logo.png/500px-Gestamp_Logo.png"
+st.logo(str(LOGO_FILE) if LOGO_FILE.exists() else LOGO_URL, size="large")
+
+apply_base_style()
 
 home = st.Page("Pages/Home.py", title="Home", icon=":material/home:", default=True)
 edi_vw = st.Page("Pages/EDI_VW_view.py", title="EDI VW View", icon=":material/insights:")
@@ -12,8 +23,8 @@ coil_storage = st.Page("Pages/Coil_Storage.py", title="Coil Storage", icon=":mat
 fifo_report = st.Page("Pages/FIFO_Report.py", title="FIFO Report - Beta", icon=":material/fact_check:")
 
 pg = st.navigation({
-    "Início": [home],
-    "Demanda & Produção": [edi_vw, press_capacity],
-    "Materiais & Armazém": [goods_receipt, coil_storage, fifo_report],
+    "Overview": [home],
+    "Demand & Production": [edi_vw, press_capacity],
+    "Materials & Warehouse": [goods_receipt, coil_storage, fifo_report],
 })
 pg.run()

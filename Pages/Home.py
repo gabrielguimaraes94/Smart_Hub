@@ -1,42 +1,37 @@
 import streamlit as st
 
-# Custom CSS
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #f8f9fa;
-    }
-    .big-font {
-        font-size: 24px !important;
-        font-weight: bold;
-        color: #333;
-        margin-top: 20px;
-        margin-bottom: 20px;
-    }
-    .logo {
-        display: block;
-        margin: auto;
-        max-width: 200px;
-        margin-bottom: 20px;
-    }
-</style>
-""", unsafe_allow_html=True)
+from ui import footer, hero, nav_card, section_label
 
-# Logo
-st.markdown('<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Gestamp_Logo.png/640px-Gestamp_Logo.png" class="logo">', unsafe_allow_html=True)
+hero(
+    "Functionality Hub",
+    "Operational reports for the GC2 plant. Pick a module below or use the side menu.",
+    eyebrow="Gestamp NAFTA · GC2 Plant",
+)
 
-# Main title
-st.markdown('<p class="big-font">Functionality Hub</p>', unsafe_allow_html=True)
+section_label("Demand & Production")
+col1, col2, col3 = st.columns(3)
+with col1:
+    nav_card("edi", "Pages/EDI_VW_view.py", "EDI VW View",
+             "VW customer demand and production planning tracking.",
+             ":material/insights:")
+with col2:
+    nav_card("press", "Pages/Press_capacity.py", "Press Capacity",
+             "Capacity and load of each press, week by week.",
+             ":material/precision_manufacturing:")
 
-# Function to create a functionality card linking to a page registered in st.navigation
-def create_functionality(icon, title, subtitle, page):
-    with st.container(border=True):
-        st.page_link(page, label=f"**{title}**", icon=icon)
-        st.caption(subtitle)
+section_label("Materials & Warehouse")
+col1, col2, col3 = st.columns(3)
+with col1:
+    nav_card("receipt", "Pages/Receiving_mat.py", "Goods Receipt",
+             "Material receipts by supplier and period.",
+             ":material/local_shipping:")
+with col2:
+    nav_card("coil", "Pages/Coil_Storage.py", "Coil Storage",
+             "Position of every coil in the coil warehouse.",
+             ":material/warehouse:")
+with col3:
+    nav_card("fifo", "Pages/FIFO_Report.py", "FIFO Report",
+             "Stock age and FIFO compliance check in shipping.",
+             ":material/fact_check:", badge="BETA")
 
-# Creating functionalities
-create_functionality(":material/insights:", "EDI VW View", "EDI VW Visualization", "Pages/EDI_VW_view.py")
-create_functionality(":material/precision_manufacturing:", "Press Capacity Calculation", "Press Capacity", "Pages/Press_capacity.py")
-create_functionality(":material/local_shipping:", "Goods Receipt Dashboard", "Goods Receipt Dashboard", "Pages/Receiving_mat.py")
-create_functionality(":material/warehouse:", "Storage Bin - Coils", "Storage Bin - Coils", "Pages/Coil_Storage.py")
-create_functionality(":material/fact_check:", "FIFO Report - Beta", "FIFO control - Shipping", "Pages/FIFO_Report.py")
+footer()

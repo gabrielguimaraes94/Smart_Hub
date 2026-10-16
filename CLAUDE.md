@@ -37,6 +37,8 @@ There are no tests or linter config. To smoke-test, use `streamlit.testing.v1.Ap
   - **The entry point runs on every rerun before the page.** Its `set_page_config` sets the app defaults, and each page's own `set_page_config` overrides only the parameters it passes (for example, the tab title).
 - **Caching and state**: `Receiving_mat.py` uses `@st.cache_data(ttl=...)`. The other pages re-read their files on every rerun. `Press_capacity.py` (the largest page) keeps manual demand entries and recalculation flags in `st.session_state`.
 - **Styling is per-page.** Each page injects its own `<style>` block through `st.markdown(..., unsafe_allow_html=True)`. There is no `.streamlit/config.toml` theme. `Home.py` loads the Gestamp logo from a Wikimedia URL.
+- **All user-facing UI text is in English**: page titles, menu sections, cards, captions, footer. Conversation with the user is in Portuguese.
+- **Shared UI lives in `ui.py`.** It has `apply_base_style` (global CSS, called by the entry point), `hero`, `section_label`, `nav_card`, `page_header`, `kpi_card`, and `footer`. Theme colors and fonts are in `.streamlit/config.toml`. `ui.PRIMARY` must match its `primaryColor`.
 - **Deprecated API to avoid in Streamlit 1.66:** `use_container_width`. Use `width="stretch"` or `width="content"` instead. `st.dataframe` now defaults to `"stretch"`.
 - The finished-goods DOH report now lives only in the sibling project `../DOH_Report`, which has its own CLAUDE.md.
 
