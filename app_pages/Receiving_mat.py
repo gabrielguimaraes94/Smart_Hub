@@ -93,7 +93,7 @@ warehouses = sorted(df['Warehouse'].unique())
 suppliers = sorted(df['Supplier_Name'].unique())
 materials = sorted(df['Material'].unique())
 
-c_start, c_end, c_wh, c_sup, c_mat = st.columns([1.2, 1.2, 2, 2.5, 2.5])
+c_start, c_end, c_wh, c_sup, c_mat = st.columns([1.6, 1.6, 2.2, 2.3, 2.3])
 with c_start:
     start_date = st.date_input("Start date", min_date, min_value=min_date, max_value=max_date)
 with c_end:
