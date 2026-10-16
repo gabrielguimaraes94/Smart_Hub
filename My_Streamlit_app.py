@@ -7,7 +7,7 @@ from ui import apply_base_style, sample_data_notice
 
 # Entry point: defines the app pages and the sidebar navigation.
 # Page content lives in app_pages/; the hub landing page is app_pages/Home.py.
-st.set_page_config(page_title="Functionality Hub", layout="wide")
+st.set_page_config(layout="wide")  # tab title comes from each st.Page title
 
 # Logo at the top of the sidebar on every page (local asset if present, else the public URL)
 LOGO_FILE = Path(__file__).parent / "assets" / "gestamp_logo.png"

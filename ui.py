@@ -73,6 +73,47 @@ div[class*="st-key-card_"] a::after {{
     position: absolute;
     inset: 0;
 }}
+/* ---- Storage slots (e.g. coil rails): rail_title / slot_card / legend ---- */
+.rail-title {{
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 2px 0 6px 0;
+    margin-bottom: 8px;
+    border-bottom: 2px solid {PRIMARY};
+}}
+.slot {{
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    min-height: 112px;   /* same height for every slot so rails line up as rows */
+    box-sizing: border-box;
+    transition: opacity .2s ease, box-shadow .2s ease;
+    font-size: 0.78rem;
+    line-height: 1.4;
+}}
+.slot.occupied {{
+    background: #FFFFFF;
+    border: 1px solid #D9DEE5;
+    border-left: 4px solid #2E7D4F;
+}}
+.slot.empty {{
+    background: #F1F3F5;
+    border: 1px dashed #C5CCD5;
+    color: #8A94A3;
+}}
+.slot.match {{
+    background: #EAF1FB;
+    border-color: {PRIMARY};
+    box-shadow: 0 0 0 3px rgba(32, 65, 108, 0.35);
+}}
+.slot.dim {{ opacity: 0.35; }}
+.slot .pos {{ font-weight: 650; font-size: 0.85rem; }}
+.slot .line {{ color: #5B6776; overflow-wrap: anywhere; }}
+.slot .line:first-of-type {{ color: #1F2933; font-weight: 600; }}
+.legend {{ display: flex; gap: 18px; font-size: 0.82rem; color: #5B6776; margin: 4px 0 10px 0; }}
+.legend .swatch {{ display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }}
+
 .hub-badge {{
     display: inline-block;
     font-size: 0.68rem;
@@ -114,6 +155,37 @@ def nav_card(key, page, titulo, descricao, icon, badge=None):
         st.page_link(page, label=titulo, icon=icon)
         badge_html = f'<span class="hub-badge">{escape(badge)}</span>' if badge else ""
         st.html(f'<div style="color:#5B6776;font-size:0.9rem;line-height:1.4">{escape(descricao)}{badge_html}</div>')
+
+
+def rail_title(texto):
+    """Centered column title with a primary-color underline (storage rails)."""
+    st.html(f'<div class="rail-title">{escape(texto)}</div>')
+
+
+def slot_card(position, occupied, lines=(), highlight=None):
+    """Compact storage slot. `lines` is a list of (label, value) shown when occupied.
+
+    Only the values are printed (the first one emphasized); the label is the hover tooltip,
+    so narrow columns never truncate the data.
+    `highlight`: None (no search active), True (search match) or False (dimmed).
+    """
+    state = "" if highlight is None else (" match" if highlight else " dim")
+    if occupied:
+        body = "".join(
+            f'<div class="line" title="{escape(k)}: {escape(str(v))}">{escape(str(v))}</div>'
+            for k, v in lines
+        )
+        st.html(f'<div class="slot occupied{state}"><div class="pos">{escape(position)}</div>{body}</div>')
+    else:
+        st.html(f'<div class="slot empty{state}"><div class="pos">{escape(position)}</div><div>Empty</div></div>')
+
+
+def legend(items):
+    """Inline color legend. `items` is a list of (label, css_background)."""
+    spans = "".join(
+        f'<span><span class="swatch" style="background:{bg}"></span>{escape(label)}</span>' for label, bg in items
+    )
+    st.html(f'<div class="legend">{spans}</div>')
 
 
 def sample_data_notice():
