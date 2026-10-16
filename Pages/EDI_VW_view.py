@@ -248,7 +248,7 @@ def main():
         st.write(f"Date range: {start_date} to {end_date}")
 
         chart = create_production_chart(df, view_type.lower(), start_date, end_date)
-        st.plotly_chart(chart, use_container_width=True)
+        st.plotly_chart(chart, width="stretch")
 
         st.subheader("Total Production by Model")
         total_production = df[(df['Date'].dt.date >= start_date) & (df['Date'].dt.date <= end_date)].groupby('Car Model')['Release Qty'].sum().sort_values(ascending=False)

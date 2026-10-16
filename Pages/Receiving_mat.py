@@ -225,7 +225,7 @@ else:
             hole=0.4
         )
         fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(fig_pie, width="stretch")
     
     with col_right:
         st.markdown('<p class="subtitle">Deliveries Over Time</p>', unsafe_allow_html=True)
@@ -242,7 +242,7 @@ else:
             title='Delivery Evolution Over Time',
             markers=True
         )
-        st.plotly_chart(fig_line, use_container_width=True)
+        st.plotly_chart(fig_line, width="stretch")
     
     # Delivery details table
     st.markdown('<p class="subtitle">Delivery Details</p>', unsafe_allow_html=True)
@@ -280,7 +280,7 @@ else:
         'Total_Quantity': 'Total Quantity'
     })
     
-    st.dataframe(deliveries_summary_display, use_container_width=True)
+    st.dataframe(deliveries_summary_display, width="stretch")
     
     # Option to download filtered data
     st.download_button(
@@ -305,7 +305,7 @@ else:
         materials_summary = materials_summary.sort_values('Delivery_Count', ascending=False)
         
         # Display materials table
-        st.dataframe(materials_summary, use_container_width=True)
+        st.dataframe(materials_summary, width="stretch")
         
         # Top 10 materials chart
         top_materials = materials_summary.head(10)
@@ -319,7 +319,7 @@ else:
             labels={'Delivery_Count': 'Number of Deliveries', 'Quantity': 'Total Quantity'}
         )
         
-        st.plotly_chart(fig_top_materials, use_container_width=True)
+        st.plotly_chart(fig_top_materials, width="stretch")
 
 # Additional information at the end of the page
 st.markdown("""

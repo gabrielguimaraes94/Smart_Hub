@@ -838,7 +838,7 @@ def main():
                 col1, col2 = st.columns([4, 1])
                 
                 with col1:
-                    st.dataframe(entries_df, use_container_width=True)
+                    st.dataframe(entries_df, width="stretch")
                 
                 with col2:
                     if st.button("Clear All"):
@@ -951,7 +951,7 @@ def main():
                 if machine in saturation_data_sorted['PRESS'].unique():
                     st.markdown(f"### Analysis for Machine {machine}")
                     fig = create_combined_machine_chart(saturation_data_sorted, machine, selected_year_weeks)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
                     st.markdown("---")  # Separator between charts
 
 if __name__ == "__main__":

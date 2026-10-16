@@ -166,7 +166,7 @@ def main():
             labels={"value": "Quantidade", "index": "Faixa"},
             text=faixa_counts,
         )
-        colg1.plotly_chart(fig_bar, use_container_width=True)
+        colg1.plotly_chart(fig_bar, width="stretch")
 
         # Gráfico de pizza
         fig_pie = px.pie(
@@ -174,7 +174,7 @@ def main():
             names=faixa_counts.index,
             title="Percentual por Faixa de Idade",
         )
-        colg2.plotly_chart(fig_pie, use_container_width=True)
+        colg2.plotly_chart(fig_pie, width="stretch")
 
     # ---------- Tabela Detalhada ----------
     st.markdown("## 📋 Detalhes do Estoque")
@@ -186,7 +186,7 @@ def main():
         ]
         cols_to_show = [c for c in cols_to_show if c in df_filtered.columns]
 
-        st.dataframe(df_filtered[cols_to_show].sort_values("idade_dias", ascending=False))
+        st.dataframe(df_filtered[cols_to_show].sort_values("idade_dias", ascending=False), width="content")
     else:
         st.info("Nenhum dado encontrado com os filtros selecionados.")
 
