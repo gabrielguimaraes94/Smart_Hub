@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import os
 from pathlib import Path
+
+from config import EDI_FOLDER
 from datetime import datetime, timedelta
 
 # Set page to wide mode
@@ -21,7 +23,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Path to the folder with Excel files
-EXCEL_FOLDER = r"\\ch2-python\PowerBI\DATA\Demand\EDI_Converted\sent_email"
+EXCEL_FOLDER = EDI_FOLDER
 
 # Dictionary to map specific parts to car models
 CAR_MODELS = {
