@@ -6,7 +6,8 @@ Dates are relative to today so the pages show current-looking data. Re-run any t
     python scripts/make_sample_data.py
 
 Schemas mirror what each page reads:
-  edi/*.xlsx                  sheet "PivotData": Part, Date From, Release Qty   (EDI_VW_view, Press_capacity)
+  edi/*.xlsx                  sheet "PivotData": Part, Date From, Release Qty   (EDI_VW_view, EDI_Compare,
+                              4 weekly files; creation time = send date           Press_capacity)
   masterdata/Masterdata.xlsx  PROJECT, PRESS, REF STAMP PN, %                   (Press_capacity)
   stock_coil/*.xlsx           LGPLA (RA-01..RH-08), MATNR, LENUM, VERME          (Coil_Storage)
   fifo/*.xlsx                 Data de criacao, Material, Descricao, Lote,
@@ -37,6 +38,22 @@ def _write(df, path, sheet_name="Sheet1", mtime=None):
     print(f"  {path.relative_to(ROOT.parent)}  ({len(df)} rows)")
 
 
+def _set_creation_time(path, when):
+    """Windows only: set the file creation time (EDI pages order and date EDI files by it)."""
+    if os.name != "nt":
+        return
+    import ctypes
+    from ctypes import wintypes
+    k32 = ctypes.windll.kernel32
+    k32.CreateFileW.restype = wintypes.HANDLE
+    ticks = int(time.mktime(when.timetuple()) * 10_000_000) + 116444736000000000
+    ft = wintypes.FILETIME(ticks & 0xFFFFFFFF, ticks >> 32)
+    handle = k32.CreateFileW(str(path), 0x100, 0, None, 3, 0x80, None)  # FILE_WRITE_ATTRIBUTES, OPEN_EXISTING
+    if handle and handle != wintypes.HANDLE(-1).value:
+        k32.SetFileTime(handle, ctypes.byref(ft), None, None)
+        k32.CloseHandle(handle)
+
+
 def make_edi():
     # Part numbers contain the CAR_MODELS keys used by the pages; one unmapped part is filtered out.
     parts = {
@@ -47,22 +64,46 @@ def make_edi():
         "3CS 809 605 A": 350,    # Coupe NF
         "5ZZ 999 000": 100,      # not mapped to a model
     }
-    for version, sent_days_ago in ((1, 7), (2, 0)):
-        start = TODAY - timedelta(days=14) + timedelta(days=7 * (version - 1))
+    # Four weekly EDI files (sent 21, 14, 7 and 0 days ago), each covering 10 weeks from one week
+    # before it was sent. All share one underlying plan, so consecutive files differ only by small
+    # noise plus the deliberate changes below (for EDI Compare). Each change applies from the given
+    # file version on, to delivery dates between the two offsets (days from today).
+    edi_rng = random.Random(7)
+    first_day = TODAY - timedelta(days=28)
+    plan = {(part, first_day + timedelta(days=d)): max(0, edi_rng.gauss(base, base * 0.15))
+            for part, base in parts.items() for d in range(100)}
+    changes = [
+        # (from version, part, first day offset, last day offset, factor)
+        (2, "11K 809 605 A", 7, 20, 0.85),    # MEB cut for two weeks
+        (3, "3CN 809 605 C", 0, 13, 1.20),    # Atlas pulled up
+        (3, "3CS 809 605 A", 21, 41, 0.60),   # Coupe NF big cut
+        (4, "11K 809 605 A", 0, 6, 1.10),     # MEB up this week
+        (4, "3CM 809 605 B", 14, 34, 0.80),   # Coupe cut
+        (4, "3CR 809 605 A", 28, 48, 1.25),   # Atlas NF up
+    ]
+
+    edi_dir = ROOT / "edi"
+    for old in edi_dir.glob("*.xlsx"):  # start clean so creation times follow the send order
+        old.unlink()
+    for version, sent_days_ago in ((1, 21), (2, 14), (3, 7), (4, 0)):
+        sent = TODAY - timedelta(days=sent_days_ago)
+        start = sent - timedelta(days=7)
         rows = []
-        for part, base in parts.items():
+        for part in parts:
             for d in range(70):
                 day = start + timedelta(days=d)
                 if day.weekday() == 6:  # no releases on Sundays
                     continue
-                rows.append({
-                    "Part": part,
-                    "Date From": pd.Timestamp(day),
-                    "Release Qty": max(0, int(rng.gauss(base, base * 0.15))),
-                })
-        sent = TODAY - timedelta(days=sent_days_ago)
-        _write(pd.DataFrame(rows), ROOT / "edi" / f"EDI_VW_SAMPLE_{sent:%Y%m%d}.xlsx",
-               sheet_name="PivotData", mtime=datetime.combine(sent, datetime.min.time()))
+                qty = plan[(part, day)]
+                for v, p, lo, hi, factor in changes:
+                    if version >= v and p == part and lo <= (day - TODAY).days <= hi:
+                        qty *= factor
+                qty *= edi_rng.uniform(0.98, 1.02)
+                rows.append({"Part": part, "Date From": pd.Timestamp(day), "Release Qty": int(qty)})
+        path = edi_dir / f"EDI_VW_SAMPLE_{sent:%Y%m%d}.xlsx"
+        sent_at = datetime.combine(sent, datetime.min.time()) + timedelta(hours=6)
+        _write(pd.DataFrame(rows), path, sheet_name="PivotData", mtime=sent_at)
+        _set_creation_time(path, sent_at)
 
 
 def make_masterdata():

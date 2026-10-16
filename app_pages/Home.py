@@ -15,6 +15,10 @@ with col1:
              "VW customer demand and production planning tracking.",
              ":material/insights:")
 with col2:
+    nav_card("edi_compare", "app_pages/EDI_Compare.py", "EDI Compare",
+             "Week-by-week changes between two VW EDI releases.",
+             ":material/compare_arrows:")
+with col3:
     nav_card("press", "app_pages/Press_capacity.py", "Press Capacity",
              "Capacity and load of each press, week by week.",
              ":material/precision_manufacturing:")
