@@ -4,6 +4,8 @@ from datetime import datetime
 import os
 import glob
 
+from config import COIL_STOCK_FOLDER
+
 # Page configuration
 st.set_page_config(
     page_title="Storage Bin - Coils",
@@ -29,7 +31,7 @@ def get_latest_file(directory_path):
 # Function to read Excel file
 def load_data():
     try:
-        directory = r"\\ch2-python\powerBI\Data\GC2\Stock_coil"
+        directory = COIL_STOCK_FOLDER
         latest_file = get_latest_file(directory)
         if latest_file is None:
             return None
