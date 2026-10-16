@@ -116,6 +116,15 @@ def nav_card(key, page, titulo, descricao, icon, badge=None):
         st.html(f'<div style="color:#5B6776;font-size:0.9rem;line-height:1.4">{escape(descricao)}{badge_html}</div>')
 
 
+def sample_data_notice():
+    """Discreet banner shown on every page while USE_SAMPLE_DATA is on."""
+    st.html(
+        '<div style="display:inline-block;font-size:0.8rem;font-weight:500;color:#8A5A00;'
+        'background:#FFF1D6;border:1px solid #F3D9A4;border-radius:999px;padding:3px 12px;margin-bottom:4px">'
+        "Sample data mode: all figures are fictitious, not plant data</div>"
+    )
+
+
 def page_header(titulo, subtitulo=None):
     """Standard page title with an optional subtitle line."""
     st.title(titulo)

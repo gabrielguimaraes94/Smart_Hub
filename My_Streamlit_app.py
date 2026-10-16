@@ -2,7 +2,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from ui import apply_base_style
+from config import USE_SAMPLE_DATA
+from ui import apply_base_style, sample_data_notice
 
 # Entry point: defines the app pages and the sidebar navigation.
 # Page content lives in Pages/; the hub landing page is Pages/Home.py.
@@ -27,4 +28,6 @@ pg = st.navigation({
     "Demand & Production": [edi_vw, press_capacity],
     "Materials & Warehouse": [goods_receipt, coil_storage, fifo_report],
 })
+if USE_SAMPLE_DATA:
+    sample_data_notice()
 pg.run()

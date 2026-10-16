@@ -21,6 +21,12 @@ The venv is broken (there is no `pyvenv.cfg`, and the bundled `python.exe` doesn
 & "C:\Program Files\Python311\python.exe" -m streamlit run My_Streamlit_app.py
 ```
 
+**Off the corporate network**, use sample data. `USE_SAMPLE_DATA=1` points every path in `config.py` to the fictitious files in `sample_data/`, and the entry point then shows a "Sample data mode" banner. To regenerate the files, run `scripts/make_sample_data.py`; it uses a fixed seed and dates relative to today.
+
+```powershell
+$env:USE_SAMPLE_DATA="1"; & "C:\Program Files\Python311\python.exe" -m streamlit run My_Streamlit_app.py
+```
+
 Always launch through `My_Streamlit_app.py`. A page started directly runs without the navigation menu.
 
 There are no tests or linter config. To smoke-test, use `streamlit.testing.v1.AppTest.from_file(<absolute path to My_Streamlit_app.py>)`, then call `.switch_page("Pages/<name>.py").run()` for each page. Off the corporate network every page stops at its data-loading step. Set `PYTHONIOENCODING=utf-8` when printing page titles, because they contain emoji.
@@ -28,7 +34,9 @@ There are no tests or linter config. To smoke-test, use `streamlit.testing.v1.Ap
 ## Architecture
 
 - **Domain**: Gestamp plant GC2 (automotive stamping) operations dashboards. They are interim replacements for Power BI reports and cover EDI demand, press capacity, coil storage, FIFO, goods receipt, and finished-goods days-on-hand (DOH).
-- **Data comes only from Windows UNC network shares** as Excel/CSV drops. There is no database or API. Each page hardcodes its own path constants at the top of the file, for example `\\ch2-python\PowerBI\DATA\...`, `\\ch2-file2.us.gestamp.com\...`, and `\\ch2-file3...`. Pages fail with `st.error` when they run off the corporate network. `EDI_VW_view` is the exception: its unguarded `os.listdir` raises an uncaught exception. To test locally, temporarily repoint these constants.
+- **Data comes only from Windows UNC network shares** as Excel/CSV drops. There is no database or API. All data paths live in `config.py`, which holds the network paths and their sample-data equivalents. Pages import their path from there.
+- **Never hardcode a path in a page.**
+- **When a page reads a new column or sheet**, update `scripts/make_sample_data.py` so the sample files keep matching. Pages fail with `st.error` when they run off the corporate network. `EDI_VW_view` is the exception: its unguarded `os.listdir` raises an uncaught exception. To test locally, temporarily repoint these constants.
 - **File discovery.** Pages pick the newest file in a folder by mtime (`get_latest_file` / glob + `os.path.getmtime`). Pages that read the EDI drops (`EDI_VW_view`, `Press_capacity`) expect sheet `PivotData`.
 - **No shared module.** Each page is copy-paste independent: it calls its own `st.set_page_config`, defines its own CSS, and duplicates helpers (`CAR_MODELS`, `map_part_to_model`, `get_week_number`, `get_latest_file`). When you change shared logic such as the part-number → car-model mapping, update every page that holds a copy.
 - **Navigation** uses `st.navigation` with `st.Page` objects grouped into sidebar sections, all defined in `My_Streamlit_app.py`. Because `st.navigation` is in use, Streamlit's `pages/` auto-discovery is off, so the capital-P `Pages/` folder name doesn't matter.
