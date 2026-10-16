@@ -33,18 +33,19 @@ There are no tests or linter config. To smoke-test, use `streamlit.testing.v1.Ap
 
 ## Architecture
 
-- **Domain**: Gestamp plant GC2 (automotive stamping) operations dashboards. They are interim replacements for Power BI reports and cover EDI demand, press capacity, coil storage, FIFO, goods receipt, and finished-goods days-on-hand (DOH).
+- **Domain**: Gestamp plant GC2 (automotive stamping) operations dashboards. They are interim replacements for Power BI reports and cover EDI demand, press capacity, coil storage, FIFO, and goods receipt.
 - **Data comes only from Windows UNC network shares** as Excel/CSV drops. There is no database or API. All data paths live in `config.py`, which holds the network paths and their sample-data equivalents. Pages import their path from there.
 - **Never hardcode a path in a page.**
-- **When a page reads a new column or sheet**, update `scripts/make_sample_data.py` so the sample files keep matching. Pages fail with `st.error` when they run off the corporate network. `EDI_VW_view` is the exception: its unguarded `os.listdir` raises an uncaught exception. To work off the network, use the sample-data mode (see Running).
+- **When a page reads a new column or sheet**, update `scripts/make_sample_data.py` so the sample files keep matching.
+- **Without network access or sample mode**, pages stop with `st.error`. `EDI_VW_view` is the exception: its unguarded `os.listdir` raises an uncaught exception.
 - **File discovery.** Pages pick the newest file in a folder by mtime (`get_latest_file` / glob + `os.path.getmtime`). Pages that read the EDI drops (`EDI_VW_view`, `Press_capacity`) expect sheet `PivotData`.
-- **No shared module.** Each page is copy-paste independent: it calls its own `st.set_page_config`, defines its own CSS, and duplicates helpers (`CAR_MODELS`, `map_part_to_model`, `get_week_number`, `get_latest_file`). When you change shared logic such as the part-number → car-model mapping, update every page that holds a copy.
+- **Data logic is not shared.** Each dashboard page still duplicates its helpers (`CAR_MODELS`, `map_part_to_model`, `get_week_number`, `get_latest_file`). When you change shared logic such as the part-number → car-model mapping, update every page that holds a copy. Only paths (`config.py`) and UI (`ui.py`) are shared.
 - **Navigation** uses `st.navigation` with `st.Page` objects grouped into sidebar sections, all defined in `My_Streamlit_app.py`. The page files live in `app_pages/`, never in a folder named `pages/` (on Windows, `Pages/` counts too). Streamlit auto-discovers such a folder, and then a deep link opened as the first request after a server restart bypasses the entry point: no theme, no menu sections, no sample banner.
   - **Adding a page** means adding a `st.Page` there and a card in `app_pages/Home.py`.
   - **Home cards** use `st.page_link("app_pages/<file>.py")`. That path must match a page registered in `st.navigation`, or Streamlit raises an error.
   - **The entry point runs on every rerun before the page.** Its `set_page_config` sets the app defaults, and each page's own `set_page_config` overrides only the parameters it passes (for example, the tab title).
 - **Caching and state**: `Receiving_mat.py` uses `@st.cache_data(ttl=...)`. The other pages re-read their files on every rerun. `Press_capacity.py` (the largest page) keeps manual demand entries and recalculation flags in `st.session_state`.
-- **Styling is per-page.** Each page injects its own `<style>` block through `st.markdown(..., unsafe_allow_html=True)`. There is no `.streamlit/config.toml` theme. `Home.py` loads the Gestamp logo from a Wikimedia URL.
+- **Styling is being standardized.** The theme lives in `.streamlit/config.toml`, which is read only when `streamlit run` starts from this folder. The entry point shows the Gestamp logo in the sidebar with `st.logo`: it uses `assets/gestamp_logo.png` if the file exists, and the Wikimedia URL otherwise. The dashboard pages still have their own `<style>` blocks, titles, and `st.set_page_config`, and some text is still in Portuguese. Pages move to `ui.py` one at a time.
 - **All user-facing UI text is in English**: page titles, menu sections, cards, captions, footer. Conversation with the user is in Portuguese.
 - **Shared UI lives in `ui.py`.** It has `apply_base_style` (global CSS, called by the entry point), `hero`, `section_label`, `nav_card`, `page_header`, `kpi_card`, and `footer`. Theme colors and fonts are in `.streamlit/config.toml`. `ui.PRIMARY` must match its `primaryColor`.
 - **Deprecated API to avoid in Streamlit 1.66:** `use_container_width`. Use `width="stretch"` or `width="content"` instead. `st.dataframe` now defaults to `"stretch"`.
