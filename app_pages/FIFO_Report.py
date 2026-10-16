@@ -3,30 +3,32 @@ import pandas as pd
 from datetime import datetime
 import os
 import glob
-import plotly.express as px
+import plotly.graph_objects as go
 
 from config import FIFO_FOLDER
+from ui import footer, kpi_card, page_header
 
-# ---------- Configuração da Página ----------
-st.set_page_config(
-    page_title="Controle FIFO - Shipping",
-    layout="wide"
-)
+AGE_BANDS = ["<30", "30-60", "60-90", "90-120", ">120"]
+AGE_LABELS = {"<30": "< 30 days", "30-60": "30–60 days", "60-90": "60–90 days",
+              "90-120": "90–120 days", ">120": "> 120 days"}
+# Green (fresh) to red (oldest)
+AGE_COLORS = {"<30": "#2E7D4F", "30-60": "#8BBF5A", "60-90": "#E9B949",
+              "90-120": "#E07B39", ">120": "#C0392B"}
 
-# ---------- Funções auxiliares ----------
+# ---------- Helpers ----------
 def get_latest_file(directory_path):
     try:
         files = glob.glob(os.path.join(directory_path, "*"))
         if not files:
-            st.error(f"Nenhum arquivo encontrado em: {directory_path}")
+            st.error(f"No files found in: {directory_path}")
             return None
         latest_file = max(files, key=os.path.getmtime)
         return latest_file
     except PermissionError:
-        st.error(f"Permissão negada ao acessar: {directory_path}")
+        st.error(f"Permission denied accessing: {directory_path}")
         return None
     except Exception as e:
-        st.error(f"Erro buscando arquivo: {str(e)}")
+        st.error(f"Error finding file: {str(e)}")
         return None
 
 
@@ -43,14 +45,14 @@ def load_data():
         except UnicodeDecodeError:
             df = pd.read_excel(latest_file, encoding="latin1")
         except Exception as e:
-            st.error(f"Erro ao ler {latest_file}: {str(e)}")
+            st.error(f"Error reading {latest_file}: {str(e)}")
             return None, None
 
         updated_ts = datetime.fromtimestamp(os.path.getmtime(latest_file))
         return df, updated_ts
 
     except Exception as e:
-        st.error(f"Erro geral ao carregar dados: {str(e)}")
+        st.error(f"Error loading data: {str(e)}")
         return None, None
 
 
@@ -99,25 +101,31 @@ def categorize_age(df):
     return df
 
 
-# ---------- Interface principal ----------
+# ---------- Main interface ----------
 def main():
-    st.title("📦 Controle FIFO de Materiais - Shipping")
+    page_header("FIFO Report", "Age of every label in shipping stock, to check FIFO. Data refreshes every 5 minutes.")
+    live_view()
 
+
+# Re-reads the file and redraws everything every 5 minutes without reloading the page
+# (replaces the old <meta refresh>; the selected filters are kept).
+@st.fragment(run_every="5m")
+def live_view():
     df_raw, updated_ts = load_data()
     df = preprocess(df_raw)
     df = categorize_age(df)
 
-    # -------------- Filtros --------------
-    with st.expander("🔎 Filtros"):
-        col1, col2 = st.columns(2)
+    # -------------- Filters --------------
+    col1, col2 = st.columns(2)
 
-        material_options = df["Material"].dropna().unique().tolist() if df is not None and "Material" in df.columns else []
-        lote_options = df["Lote"].dropna().unique().tolist() if df is not None and "Lote" in df.columns else []
+    material_options = df["Material"].dropna().unique().tolist() if df is not None and "Material" in df.columns else []
+    lote_options = df["Lote"].dropna().unique().tolist() if df is not None and "Lote" in df.columns else []
 
-        selected_materials = col1.multiselect("Material", material_options)
-        selected_lotes = col2.multiselect("Lote", lote_options)
+    selected_materials = col1.multiselect("Material", material_options, placeholder="All materials",
+                                          key="fifo_materials")
+    selected_lotes = col2.multiselect("Lot", lote_options, placeholder="All lots", key="fifo_lots")
 
-    # Aplicar filtros
+    # Apply filters
     if df is not None:
         df_filtered = df.copy()
         if selected_materials:
@@ -128,14 +136,6 @@ def main():
         df_filtered = None
 
     # ---------- KPIs ----------
-    st.markdown("## 📊 Indicadores FIFO")
-
-    kpi1, kpi2 = st.columns([3, 2])
-
-    with kpi2:
-        if updated_ts:
-            st.success(f"Última atualização: {updated_ts.strftime('%d/%m/%Y %H:%M:%S')}")
-
     if df_filtered is not None and "faixa_idade" in df_filtered.columns:
         total = len(df_filtered)
         faixa_counts = df_filtered["faixa_idade"].value_counts().reindex(
@@ -148,37 +148,45 @@ def main():
         faixa_perc = faixa_counts
 
     kpis = st.columns(6)
-    kpis[0].metric("Total etiquetas", total)
+    with kpis[0]:
+        kpi_card("Total labels", f"{total:,}")
+    for i, band in enumerate(AGE_BANDS):
+        with kpis[i + 1]:
+            kpi_card(AGE_LABELS[band], f"{faixa_perc[band]}%", help=f"{faixa_counts[band]:,} labels")
 
-    labels = ["<30", "30-60", "60-90", "90-120", ">120"]
-    for i, l in enumerate(labels):
-        kpis[i + 1].metric(l, f"{faixa_perc[l]}%")
-
-    # ---------- Gráficos ----------
+    # ---------- Charts ----------
     if df_filtered is not None and len(df_filtered) > 0:
-        st.markdown("## 📈 Gráficos")
-
         colg1, colg2 = st.columns(2)
+        names = [AGE_LABELS[b] for b in AGE_BANDS]
+        colors = [AGE_COLORS[b] for b in AGE_BANDS]
+        layout = dict(font=dict(family='Inter, sans-serif', color='#1F2933'),
+                      plot_bgcolor='#FFFFFF', paper_bgcolor='rgba(0,0,0,0)', height=380)
 
-        # Gráfico de barras
-        fig_bar = px.bar(
-            faixa_counts,
-            title="Distribuição por Faixa de Idade",
-            labels={"value": "Quantidade", "index": "Faixa"},
-            text=faixa_counts,
-        )
-        colg1.plotly_chart(fig_bar, width="stretch")
+        with colg1:
+            st.subheader("Labels by age band")
+            fig_bar = go.Figure(go.Bar(
+                x=names, y=faixa_counts.values, marker_color=colors,
+                text=[f"{v:,}" for v in faixa_counts.values], textposition='outside',
+                hovertemplate="%{x}<br>%{y:,} labels<extra></extra>",
+            ))
+            fig_bar.update_layout(**layout, margin=dict(t=20, b=10, l=10, r=10),
+                                  yaxis=dict(title="Labels", gridcolor='#E6EAF0',
+                                             range=[0, max(faixa_counts.max(), 1) * 1.15]))
+            st.plotly_chart(fig_bar, width="stretch")
 
-        # Gráfico de pizza
-        fig_pie = px.pie(
-            values=faixa_counts,
-            names=faixa_counts.index,
-            title="Percentual por Faixa de Idade",
-        )
-        colg2.plotly_chart(fig_pie, width="stretch")
+        with colg2:
+            st.subheader("Share by age band")
+            fig_pie = go.Figure(go.Pie(
+                labels=names, values=faixa_counts.values, hole=0.55, sort=False,
+                marker=dict(colors=colors, line=dict(color='#FFFFFF', width=2)),
+                hovertemplate="%{label}<br>%{value:,} labels (%{percent})<extra></extra>",
+            ))
+            fig_pie.update_layout(**layout, margin=dict(t=20, b=10, l=10, r=10),
+                                  legend=dict(traceorder='normal'))
+            st.plotly_chart(fig_pie, width="stretch")
 
-    # ---------- Tabela Detalhada ----------
-    st.markdown("## 📋 Detalhes do Estoque")
+    # ---------- Detail table ----------
+    st.subheader("Stock detail")
 
     if df_filtered is not None and len(df_filtered) > 0:
         cols_to_show = [
@@ -187,17 +195,22 @@ def main():
         ]
         cols_to_show = [c for c in cols_to_show if c in df_filtered.columns]
 
-        st.dataframe(df_filtered[cols_to_show].sort_values("idade_dias", ascending=False), width="content")
+        st.dataframe(
+            df_filtered[cols_to_show].sort_values("idade_dias", ascending=False),
+            hide_index=True,
+            column_config={
+                "Descricao": "Description",
+                "Lote": "Lot",
+                "Etiqueta": "Label",
+                "Quantidade": st.column_config.NumberColumn("Quantity", format="localized"),
+                "idade_dias": st.column_config.NumberColumn("Age (days)"),
+                "faixa_idade": "Age band",
+            },
+        )
     else:
-        st.info("Nenhum dado encontrado com os filtros selecionados.")
+        st.info("No data found for the selected filters.")
 
-    # ---------- Auto refresh ----------
-    st.markdown(
-        """
-        <meta http-equiv="refresh" content="300">
-        """,
-        unsafe_allow_html=True
-    )
+    footer(updated_ts)
 
 
 if __name__ == "__main__":
