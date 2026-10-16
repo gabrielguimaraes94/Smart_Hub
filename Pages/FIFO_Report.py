@@ -8,8 +8,7 @@ import plotly.express as px
 # ---------- Configuração da Página ----------
 st.set_page_config(
     page_title="Controle FIFO - Shipping",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="wide"
 )
 
 # ---------- Funções auxiliares ----------

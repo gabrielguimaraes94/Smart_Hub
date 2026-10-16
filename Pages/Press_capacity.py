@@ -10,7 +10,6 @@ from plotly.subplots import make_subplots
 # Page configuration - must be the first Streamlit call
 st.set_page_config(
     layout="wide",
-    initial_sidebar_state="collapsed",
     page_title="Press Capacity Calculation",
     page_icon="🏋🏻‍♀️"
 )

@@ -7,8 +7,7 @@ import glob
 # Page configuration
 st.set_page_config(
     page_title="Storage Bin - Coils",
-    layout="wide",
-    initial_sidebar_state="collapsed"  # Sidebar starts collapsed
+    layout="wide"
 )
 
 # Function to find the latest file in folder

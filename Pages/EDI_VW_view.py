@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 # Set page to wide mode
-st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(layout="wide")
 
 # Custom CSS to adjust font sizes
 st.markdown("""
