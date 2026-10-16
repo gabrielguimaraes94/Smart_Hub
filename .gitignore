@@ -1,0 +1,12 @@
+# virtualenv files living in this Scripts/ folder
+*.exe
+*.cmd
+*.bat
+activate
+Activate.ps1
+pywin32_postinstall.py
+pywin32_testall.py
+
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
