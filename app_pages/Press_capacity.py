@@ -7,6 +7,8 @@ from pathlib import Path
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from config import EDI_FOLDER, PRESS_MASTER_DATA_FILE
+
 # Page configuration - must be the first Streamlit call
 st.set_page_config(
     layout="wide",
@@ -27,8 +29,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Paths to folders with Excel files and master data
-EXCEL_FOLDER = r"\\CH2-PYTHON\PowerBI\DATA\Demand\EDI_Converted\sent_email"
-MASTER_DATA_FILE = r"\\CH2-PYTHON\PowerBI\DATA\Demand\EDI_Converted\MasterData\Masterdata.xlsx"
+EXCEL_FOLDER = EDI_FOLDER
+MASTER_DATA_FILE = PRESS_MASTER_DATA_FILE
 
 # Dictionary to map specific parts to car models
 CAR_MODELS = {
