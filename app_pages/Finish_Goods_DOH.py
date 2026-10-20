@@ -501,6 +501,19 @@ def inject_css():
     )
 
 
+def inject_tv_css():
+    """TV mode (?tv=1) when the page runs on its own: no toolbar, sidebar or side padding.
+    Inside the Smart Hub, its entry point already does this (ui.apply_tv_style)."""
+    st.html(
+        """<style>
+    header[data-testid="stHeader"], section[data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"] { display: none !important; }
+    [data-testid="stMainBlockContainer"] { padding-top: 1rem !important; padding-bottom: 0.5rem !important;
+                                            max-width: 100% !important; }
+    </style>"""
+    )
+
+
 def auto_refresh():
     """Full page reload for TV mode (filters survive via the URL query string)."""
     if AUTO_REFRESH_MINUTES > 0:
@@ -739,6 +752,10 @@ def check_sources(src: dict) -> dict:
 # ----------------------------------------------------------------------
 # PAGE
 # ----------------------------------------------------------------------
+def is_tv_mode() -> bool:
+    return st.query_params.get("tv") == "1"
+
+
 def page_header(week_no: int, start: date, last_update: datetime):
     """Standard Smart Hub header: page title + one caption line with the report context."""
     st.title("Finished Goods DOH")
@@ -753,8 +770,8 @@ def page_header(week_no: int, start: date, last_update: datetime):
 def dashboard(src: dict):
     """Everything that reacts to clicks: reruns alone, without reloading the page."""
     header = st.container()
-    c_prog, c_week, c_search, c_stock, c_reload = st.columns(
-        [4.2, 2.2, 1.8, 1.3, 1.0], vertical_alignment="center"
+    c_prog, c_week, c_search, c_stock, c_reload, c_tv = st.columns(
+        [4.2, 2.2, 1.8, 1.3, 1.0, 0.75], vertical_alignment="center"
     )
 
     with c_week:
@@ -796,6 +813,18 @@ def dashboard(src: dict):
                      f"by itself every {AUTO_REFRESH_MINUTES} min)",
                      type="primary", width="stretch"):
             st.cache_data.clear()
+            st.rerun()
+    with c_tv:
+        # ?tv=1: the Smart Hub hides its menu and toolbar; on its own the page applies inject_tv_css.
+        # st.rerun() reruns the whole app (not just this fragment), so the TV layout is applied.
+        tv = is_tv_mode()
+        if st.button("Exit TV" if tv else "TV", icon=":material/tv_off:" if tv else ":material/tv:",
+                     help="Leave TV mode" if tv else "TV mode: full screen width, no menu or toolbar",
+                     width="stretch"):
+            if tv:
+                del st.query_params["tv"]
+            else:
+                st.query_params["tv"] = "1"
             st.rerun()
 
     qp_set(
@@ -847,6 +876,8 @@ def main():
         layout="wide",
     )
     inject_css()
+    if is_tv_mode():
+        inject_tv_css()
     auto_refresh()
     src = check_sources(scan_sources())
     dashboard(src)

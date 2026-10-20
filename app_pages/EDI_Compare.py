@@ -96,6 +96,27 @@ def main():
         st.warning("The two files have no delivery dates in common.")
         return
 
+    # Week range: any span of the weeks both files cover (default: all of them)
+    common_weeks = []
+    start = week_start(lo)
+    while start <= hi:
+        common_weeks.append(start)
+        start += timedelta(days=7)
+    c_from, c_to, c_info = st.columns([3, 3, 3], vertical_alignment="bottom")
+    with c_from:
+        w_from = st.selectbox("From week", common_weeks, index=0,
+                              format_func=lambda s: week_label(s, lo, hi))
+    with c_to:
+        w_to = st.selectbox("To week", common_weeks, index=len(common_weeks) - 1,
+                            format_func=lambda s: week_label(s, lo, hi))
+    if w_from > w_to:
+        st.warning("“From week” must not be after “To week”.")
+        return
+    lo, hi = max(lo, w_from), min(hi, w_to + timedelta(days=6))
+    with c_info:
+        n_weeks = common_weeks.index(w_to) - common_weeks.index(w_from) + 1
+        st.caption(f"{n_weeks} of {len(common_weeks)} weeks selected")
+
     weekly = pd.DataFrame({'Base': weekly_totals(base, lo, hi, models),
                            'Compare': weekly_totals(new, lo, hi, models)}).fillna(0).reset_index()
     weekly['Change'] = weekly['Compare'] - weekly['Base']
@@ -113,7 +134,7 @@ def main():
     with k4:
         p = pct(tn, tb)
         kpi_card("Change %", f"{p:+.1%}" if p is not None else "–")
-    st.caption(f"Delivery dates covered by both files: {lo:%b %d} – {hi:%b %d, %Y}. "
+    st.caption(f"Compared delivery dates (covered by both files): {lo:%b %d} – {hi:%b %d, %Y}. "
                "* = partial week (only some of its days are compared).")
 
     week_order = sorted(weekly['Week start'].unique())

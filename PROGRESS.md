@@ -14,6 +14,7 @@ History details are in `git log main..HEAD`.
 
 ## In progress
 - [x] 2026-10-20: every page validated in both themes (browser) and with AppTest (sample data: 8/8 pages, no exceptions)
+- [x] 2026-10-20: EDI Compare week range (From/To week); DOH TV mode button; `scripts/check_server.py` for the ch2-python server
 - [ ] Merge `modernizacao-visual` into `main` and push (waiting for the user's go-ahead)
 - [ ] Deploy: the server still runs the old `Pages/` layout (see DOH_Report/Error.png: `C:\Python\PrdScript\env_3.12.7\Scripts\Pages\Finish_Goods_DOH.py`, `No module named 'app'`)
 

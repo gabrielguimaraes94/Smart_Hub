@@ -27,6 +27,8 @@ The venv is broken (there is no `pyvenv.cfg`, and the bundled `python.exe` doesn
 $env:USE_SAMPLE_DATA="1"; & "C:\Program Files\Python311\python.exe" -m streamlit run My_Streamlit_app.py
 ```
 
+**Server check:** `scripts/check_server.py` checks Python, the `requirements.txt` pins, the app files and every network share in `config.py`. It only reads; run it on the server.
+
 Always launch through `My_Streamlit_app.py`. A page started directly runs without the navigation menu.
 
 **Visual check in a browser.** The `chrome-devtools` MCP (ecc plugin) drives a real Chrome from this session. Start the server in the background on `127.0.0.1:8599` with sample data, open each page with `new_page`/`navigate_page`, and capture it with `take_screenshot`. Use `emulate colorScheme=dark|light` to test both themes.
