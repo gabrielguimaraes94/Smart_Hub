@@ -10,9 +10,9 @@ History details are in `git log main..HEAD`.
 - [x] Coil Storage TV mode (`?tv=1`), fullscreen, 5-minute in-place refresh
 - [x] 2026-10-20: all 7 pages validated in the browser with sample data, light theme, no errors
 - [x] 2026-10-20: light **and** dark theme (`[theme.light]`/`[theme.dark]`, `--hub-*` tokens, theme-neutral charts); all 7 pages checked in dark, live switch works
+- [x] 2026-10-20: Finished Goods DOH in the hub (hub look made in `../DOH_Report`, parity tests green, also on the hub's pandas 2.1.1), "Finished Goods" menu section + Home card, sample data, checked light/dark/TV
 
 ## In progress
-- [ ] Finished Goods DOH in the hub: change the visuals in `../DOH_Report` (source of truth, parity tests), rebuild, copy to `app_pages/`, register in `st.navigation` + Home card, sample data
 - [ ] Validate every page in both themes (browser), then merge `modernizacao-visual` into `main`
 
 ## Known issues

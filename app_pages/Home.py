@@ -38,4 +38,11 @@ with col3:
              "Stock age and FIFO compliance check in shipping.",
              ":material/fact_check:", badge="BETA")
 
+section_label("Finished Goods")
+col1, col2, col3 = st.columns(3)
+with col1:
+    nav_card("doh", "app_pages/Finish_Goods_DOH.py", "Finished Goods DOH",
+             "Finished goods stock, days on hand and sales of the week.",
+             ":material/inventory_2:")
+
 footer()

@@ -57,7 +57,7 @@ There are no tests or linter config. To smoke-test, use `streamlit.testing.v1.Ap
 - **All user-facing UI text is in English**: page titles, menu sections, cards, captions, footer. Conversation with the user is in Portuguese.
 - **Shared UI lives in `ui.py`.** It has `apply_base_style` (global CSS, called by the entry point), `hero`, `section_label`, `nav_card`, `page_header`, `kpi_card`, and `footer`, plus the TV helpers (`is_tv_mode`, `apply_tv_style`, `tv_mode_button`, `fullscreen_button`), `sample_data_notice`, and the Coil Storage building blocks (`rail_title`, `slot_card`, `legend`). Check it before writing new HTML/CSS in a page. Theme colors and fonts are in `.streamlit/config.toml`. `ui.PRIMARY` must match `[theme.light] primaryColor`.
 - **Deprecated API to avoid in Streamlit 1.66:** `use_container_width`. Use `width="stretch"` or `width="content"` instead. `st.dataframe` now defaults to `"stretch"`.
-- **Finished Goods DOH.** The source lives in the sibling project `../DOH_Report`, which has its own CLAUDE.md and parity tests against Power BI. `app_pages/Finish_Goods_DOH.py` is a copy of its generated single-file build (`dist/Finish_Goods_DOH.py`, made by `scripts/build_single_file.py`). Never edit the copy here: change the modules there, run its tests and build, then copy the build over.
+- **Finished Goods DOH.** The source lives in the sibling project `../DOH_Report`, which has its own CLAUDE.md and parity tests against Power BI. `app_pages/Finish_Goods_DOH.py` is a copy of its generated single-file build (`dist/Finish_Goods_DOH.py`, made by `scripts/build_single_file.py`). Never edit the copy here: change the modules there, run its tests and build, then copy the build over. Because the build cannot import this hub's `config.py`, that file exports the DOH paths as the environment variables `DOH_STOCK_FOLDER`, `DOH_DEMAND_FILE` and `DOH_SALES_FOLDER`, which the build reads. Its sample files (`sample_data/doh/`) come from DOH_Report's own generator, which `scripts/make_sample_data.py` calls (`make_doh`). The DOH table is wide: it scrolls sideways while the sidebar is open, and fits a 1920 px screen with `?tv=1`.
 - `Erros/` (untracked) holds the user's screenshots of UI issues (light and dark versions). It is reference material, not source.
 
 ## Contexto do negócio
@@ -71,6 +71,7 @@ EDI_Compare.py - Compara as liberações EDI entre arquivos (reaproveita as fun�
 FIFO_Report.py - Um relatorio ainda em fase de teste para confirmar o fifo na planta 
 Press_capacity.py - Calculo para saber como esta a capacidade de cada maquina   
 Receiving_mat.py - Um relatorio de recebimento 
+Finish_Goods_DOH.py - Estoque de produto acabado, DOH e vendas da semana (build do ../DOH_Report)
 
 ## Regras
 - NÃO alterar lógica de dados, consultas ou cálculos sem perguntar antes.

@@ -22,6 +22,8 @@ _TOKENS = {
     "empty-border": ("#C5CCD5", "#3A4A60"),
     "empty-text": ("#8A94A3", "#6F7D90"),
     "match-bg": ("#EAF1FB", "#1E3555"),
+    "head-bg": ("#EAF1FB", "#1E3555"),        # table headers (Finished Goods DOH)
+    "zebra": ("#F6F8FB", "#182335"),          # alternate table rows
     "badge-bg": ("#FFF1D6", "#3A2E12"),
     "badge-text": ("#8A5A00", "#F2C46B"),
     "badge-border": ("#F3D9A4", "#5C4A1E"),

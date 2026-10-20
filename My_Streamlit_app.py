@@ -26,11 +26,13 @@ press_capacity = st.Page("app_pages/Press_capacity.py", title="Press Capacity", 
 goods_receipt = st.Page("app_pages/Receiving_mat.py", title="Goods Receipt - Beta", icon=":material/local_shipping:")
 coil_storage = st.Page("app_pages/Coil_Storage.py", title="Coil Storage", icon=":material/warehouse:")
 fifo_report = st.Page("app_pages/FIFO_Report.py", title="FIFO Report - Beta", icon=":material/fact_check:")
+fg_doh = st.Page("app_pages/Finish_Goods_DOH.py", title="Finished Goods DOH", icon=":material/inventory_2:")
 
 pg = st.navigation({
     "Overview": [home],
     "Demand & Production": [edi_vw, edi_compare, press_capacity],
     "Materials & Warehouse": [goods_receipt, coil_storage, fifo_report],
+    "Finished Goods": [fg_doh],
 }, position="hidden" if tv else "sidebar")
 if USE_SAMPLE_DATA:
     sample_data_notice()

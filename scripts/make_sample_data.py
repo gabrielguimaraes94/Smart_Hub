@@ -15,7 +15,12 @@ Schemas mirror what each page reads:
   receiving_materials/*.xlsx  12 columns A..L; the page reads D,E,F,G,I,K,L by position:
                               Warehouse, Delivery Date, Material, Quantity,
                               Invoice Number, Supplier Code, Supplier Name      (Receiving_mat)
+  doh/                        stock/STOCK_GC2_*.csv, Demand_master_Data.xlsx,
+                              sales/GC2_SALES*.XLSX                              (Finish_Goods_DOH)
+                              written by ../DOH_Report/scripts/make_sample_data.py, the
+                              generator of the project the page is built from
 """
+import importlib.util
 import os
 import random
 import time
@@ -184,6 +189,18 @@ def make_receiving():
         _write(pd.DataFrame(rows), ROOT / "receiving_materials" / f"Receiving_SAMPLE_m{month_offset}.xlsx")
 
 
+def make_doh():
+    """Finished Goods DOH files, from the DOH_Report generator so both projects stay in sync."""
+    gen = Path(__file__).resolve().parents[2] / "DOH_Report" / "scripts" / "make_sample_data.py"
+    if not gen.exists():
+        print(f"Skipping doh/: {gen} not found")
+        return
+    spec = importlib.util.spec_from_file_location("doh_sample_data", gen)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.generate(ROOT / "doh", seed=42)
+
+
 if __name__ == "__main__":
     print(f"Writing sample data to {ROOT}")
     make_edi()
@@ -191,3 +208,4 @@ if __name__ == "__main__":
     make_coil_stock()
     make_fifo()
     make_receiving()
+    make_doh()
