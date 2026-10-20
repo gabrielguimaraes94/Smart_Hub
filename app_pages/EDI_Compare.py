@@ -10,9 +10,10 @@ import streamlit as st
 # so both pages read and group the EDI files the same way.
 from app_pages.EDI_VW_view import (CAR_MODELS, EXCEL_FOLDER, get_file_creation_date,
                                    get_week_number, load_excel_file, process_data)
-from ui import CHART_FONT, GRID_COLOR, PRIMARY, footer, kpi_card, page_header
+from ui import CHART_FONT, GRID_COLOR, LINE_COLOR, PRIMARY, footer, kpi_card, page_header
 
 BASE_COLOR = "#A9B4C2"  # grey for the base (older) file, Gestamp blue for the compare file
+DEFAULT_MODELS = ["Atlas NF", "Coupe NF"]  # pre-selected car models
 
 
 def list_edi_files():
@@ -36,6 +37,12 @@ def weekly_totals(df, lo, hi, models):
     d = df[(df['Date'].dt.date >= lo) & (df['Date'].dt.date <= hi) & df['Car Model'].isin(models)].copy()
     d['Week start'] = d['Date'].dt.date.map(week_start)
     return d.groupby(['Week start', 'Car Model'])['Release Qty'].sum()
+
+
+def daily_totals(df, lo, hi, models):
+    """Release Qty per delivery date over [lo, hi] for the chosen models."""
+    d = df[(df['Date'].dt.date >= lo) & (df['Date'].dt.date <= hi) & df['Car Model'].isin(models)]
+    return d.groupby(d['Date'].dt.date)['Release Qty'].sum()
 
 
 def week_label(start, lo, hi):
@@ -70,7 +77,8 @@ def main():
         new_name = st.selectbox("Compare file", names, index=0,
                                 format_func=lambda f: file_label(f, received[f]))
     with c_models:
-        models = st.multiselect("Car models", list(CAR_MODELS.values()), default=list(CAR_MODELS.values()))
+        models = st.multiselect("Car models", list(CAR_MODELS.values()),
+                                default=[m for m in DEFAULT_MODELS if m in CAR_MODELS.values()])
 
     if base_name == new_name:
         st.warning("Pick two different files to compare.")
@@ -140,6 +148,38 @@ def main():
     week_order = sorted(weekly['Week start'].unique())
     week_names = [week_label(s, lo, hi) for s in week_order]
     model_order = [m for m in CAR_MODELS.values() if m in models]
+
+    # Line: base file vs compare file over the compared dates (the first comparison)
+    c_title, c_view = st.columns([3, 1], vertical_alignment="bottom")
+    with c_title:
+        st.subheader("Base vs compare")
+    with c_view:
+        line_view = st.radio("Line view", ("Daily", "Weekly"), horizontal=True, label_visibility="collapsed")
+    if line_view == "Daily":
+        series = pd.DataFrame({'Base': daily_totals(base, lo, hi, models),
+                               'Compare': daily_totals(new, lo, hi, models)}).fillna(0).sort_index()
+        x_vals, x_hover = list(series.index), "%{x|%a %b %d, %Y}"
+    else:
+        series = weekly.groupby('Week start')[['Base', 'Compare']].sum().sort_index()
+        x_vals, x_hover = [week_label(s, lo, hi) for s in series.index], "%{x}"
+    line = go.Figure()
+    for col, color, dash, name in (('Base', BASE_COLOR, 'dot', f"Base · {base_name}"),
+                                   ('Compare', LINE_COLOR, 'solid', f"Compare · {new_name}")):
+        line.add_trace(go.Scatter(
+            x=x_vals, y=series[col], name=name, mode='lines+markers',
+            line=dict(color=color, width=3, dash=dash), marker=dict(size=6),
+            hovertemplate=f"<b>{col}</b> · {x_hover}<br>%{{y:,}} pcs<extra></extra>",
+        ))
+    line.update_layout(
+        height=380, hovermode='x unified',
+        yaxis=dict(title="Release quantity (pcs)", gridcolor=GRID_COLOR, tickformat=',', rangemode='tozero'),
+        xaxis=dict(gridcolor=GRID_COLOR),
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='left', x=0),
+        margin=dict(t=40, b=10, l=10, r=10),
+        font=CHART_FONT,
+        plot_bgcolor='#FFFFFF', paper_bgcolor='rgba(0,0,0,0)',
+    )
+    st.plotly_chart(line, width="stretch")
 
     # Heatmap: change per model × delivery week (green = more, red = less)
     st.subheader("Change by model and week")

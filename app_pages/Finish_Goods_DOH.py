@@ -20,7 +20,6 @@ import os
 import re
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 import html
 import plotly.graph_objects as go
 from pathlib import Path
@@ -80,12 +79,16 @@ COLOR_YELLOW = "#E9B949"
 COLOR_GREEN = "#2E7D4F"
 BAND_TEXT = {"red": "#FFFFFF", "yellow": "#1F2933", "green": "#FFFFFF"}   # readable on each band
 
+# Programs in the "Items per DOH band by Program" chart (Service has only occasional sales)
+CHART_PROGRAMS = ("NF ATLAS", "NF COUPE")
+
 # ----------------------------------------------------------------------
 # TV DISPLAY TUNING
 # ----------------------------------------------------------------------
 TABLE_FONT_SIZE = "13px"     # shrink/grow to fit the TV resolution
 TABLE_HEIGHT = "62vh"        # vertical space used by the table
-AUTO_REFRESH_MINUTES = 5     # full page reload for TV displays (0 = off)
+TV_TABLE_HEIGHT = "calc(100vh - 330px)"   # TV mode: the screen left under the header, cards and chart (1080p: all rows)
+AUTO_REFRESH_MINUTES = 5     # background redraw for TV displays, no page reload (0 = off)
 FILE_SCAN_TTL = 60           # seconds between scans of the network folders
 
 
@@ -460,8 +463,15 @@ def inject_css():
     # st.html with only a <style> takes no space in the layout (st.markdown would add a gap)
     st.html(
         f"""<style>
-    /* the zero-height auto-refresh iframe takes no space either */
-    div[data-testid="stElementContainer"]:has(> iframe[height="0"]) {{ display: none; }}
+    /* background refresh on a TV: keep the old content fully visible while the new one is built
+       (Streamlit fades "stale" elements during a rerun) */
+    div[data-testid="stElementContainer"][data-stale="true"] {{ opacity: 1 !important; transition: none !important; }}
+
+    /* fullscreen button: same size and look as a secondary Streamlit button */
+    .doh-fs-btn {{ width: 100%; height: 2.5rem; cursor: pointer; font: inherit; font-size: 1.1rem;
+                  color: var(--hub-text, #1F2933); background: var(--hub-surface, #FFFFFF);
+                  border: 1px solid var(--hub-border, #D9DEE5); border-radius: 0.5rem; }}
+    .doh-fs-btn:hover {{ border-color: var(--hub-accent, #20416C); color: var(--hub-accent, #20416C); }}
 
     /* ---- KPI cards (same look as the hub's bordered st.metric) ---- */
     .kpis {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }}
@@ -469,7 +479,7 @@ def inject_css():
            border-radius: 0.5rem; padding: 0.6rem 1rem;
            background: var(--hub-surface, #FFFFFF); }}
     .kpi .label {{ font-size: 0.875rem; color: var(--hub-muted, #5B6776); }}
-    .kpi .value {{ font-size: 1.75rem; font-weight: 600; line-height: 1.25;
+    .kpi .value {{ font-family: var(--hub-display-font, inherit); font-size: 1.75rem; font-weight: 600; line-height: 1.25;
                   color: var(--hub-text, #1F2933); }}
     .kpi .sub {{ font-size: 0.75rem; color: var(--hub-muted, #5B6776); }}
     .kpi.filled .label, .kpi.filled .value, .kpi.filled .sub {{ color: inherit; }}
@@ -510,18 +520,26 @@ def inject_tv_css():
     [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"] { display: none !important; }
     [data-testid="stMainBlockContainer"] { padding-top: 1rem !important; padding-bottom: 0.5rem !important;
                                             max-width: 100% !important; }
-    </style>"""
+    .fgwrap { max-height: TV_TABLE_HEIGHT !important; }
+    </style>""".replace("TV_TABLE_HEIGHT", TV_TABLE_HEIGHT)
     )
 
 
-def auto_refresh():
-    """Full page reload for TV mode (filters survive via the URL query string)."""
-    if AUTO_REFRESH_MINUTES > 0:
-        components.html(
-            f"<script>setTimeout(function(){{window.parent.location.reload();}},"
-            f"{AUTO_REFRESH_MINUTES * 60 * 1000});</script>",
-            height=0,
-        )
+def fullscreen_button():
+    """Browser fullscreen on/off (the Fullscreen API needs a click; a kiosk browser is the
+    permanent option). st.html strips inline onclick, so the handler is bound in the script."""
+    st.html(
+        """<button class="doh-fs-btn" type="button" title="Fullscreen on/off">&#x26F6;</button>
+        <script>
+        document.querySelectorAll(".doh-fs-btn").forEach(function (b) {
+            b.onclick = function () {
+                if (document.fullscreenElement) { document.exitFullscreen(); }
+                else { document.documentElement.requestFullscreen(); }
+            };
+        });
+        </script>""",
+        unsafe_allow_javascript=True,
+    )
 
 
 # ======================================================================
@@ -658,8 +676,11 @@ BANDS = [("red", "Critical", COLOR_RED),
          ("green", "On target", COLOR_GREEN)]
 
 
-def program_bands_chart(table: pd.DataFrame, selected: str | None) -> go.Figure:
+def program_bands_chart(table: pd.DataFrame, selected: list[str]) -> go.Figure:
+    """Only the CHART_PROGRAMS (when present); the `selected` Programs are shown in bold."""
     t = table[table["Program"] != ""].assign(Band=table["DOH"].map(doh_band))
+    if t["Program"].isin(CHART_PROGRAMS).any():
+        t = t[t["Program"].isin(CHART_PROGRAMS)]
     counts = (
         t.dropna(subset=["Band"])
         .groupby(["Program", "Band"]).size()
@@ -669,7 +690,7 @@ def program_bands_chart(table: pd.DataFrame, selected: str | None) -> go.Figure:
     # Worst programs on top
     counts = counts.sort_values(["red", "yellow"], ascending=True)
     labels = [
-        f"<b>{p}</b>" if selected and p == selected else p for p in counts.index
+        f"<b>{p}</b>" if p in selected else p for p in counts.index
     ]
 
     fig = go.Figure()
@@ -700,6 +721,8 @@ def program_bands_chart(table: pd.DataFrame, selected: str | None) -> go.Figure:
 # app.py
 # ======================================================================
 WEEK_OPTIONS = ["Current Week", "Previous Week"]
+ALL = "Select all"
+PROGRAM_SEP = "|"   # several Programs in the ?program= URL parameter
 
 
 # ----------------------------------------------------------------------
@@ -766,12 +789,28 @@ def page_header(week_no: int, start: date, last_update: datetime):
     )
 
 
-@st.fragment
-def dashboard(src: dict):
-    """Everything that reacts to clicks: reruns alone, without reloading the page."""
+def _programs_changed():
+    """Program buttons, several at a time like the Power BI slicer: "Select all" clears the
+    others, picking a Program clears "Select all", and an empty pick means "Select all"."""
+    sel = st.session_state.doh_programs or []
+    prev = st.session_state.get("doh_programs_prev", [ALL])
+    if ALL in sel and ALL not in prev:
+        sel = [ALL]
+    elif ALL in sel and len(sel) > 1:
+        sel = [p for p in sel if p != ALL]
+    st.session_state.doh_programs = sel or [ALL]
+    st.session_state.doh_programs_prev = st.session_state.doh_programs
+
+
+@st.fragment(run_every=f"{AUTO_REFRESH_MINUTES}m" if AUTO_REFRESH_MINUTES > 0 else None)
+def dashboard():
+    """The whole report. Clicks rerun only this fragment, and every AUTO_REFRESH_MINUTES it
+    reruns by itself in the background: the files are scanned again and the page is redrawn in
+    place, with no page reload (filters, fullscreen and the TV layout are kept)."""
+    src = check_sources(scan_sources())
     header = st.container()
-    c_prog, c_week, c_search, c_stock, c_reload, c_tv = st.columns(
-        [4.2, 2.2, 1.8, 1.3, 1.0, 0.75], vertical_alignment="center"
+    c_prog, c_week, c_search, c_stock, c_reload, c_tv, c_fs = st.columns(
+        [4.2, 2.2, 1.8, 1.3, 1.0, 0.75, 0.45], vertical_alignment="center"
     )
 
     with c_week:
@@ -792,13 +831,16 @@ def dashboard(src: dict):
 
     with c_prog:
         programs = sorted(p for p in table["Program"].unique() if p)
-        options = ["Select all"] + programs
-        saved_prog = qp_get("program", "Select all")
-        sel_program = st.segmented_control(
-            "Program", options,
-            default=saved_prog if saved_prog in options else "Select all",
-            label_visibility="collapsed",
-        ) or "Select all"
+        options = [ALL] + programs
+        if "doh_programs" not in st.session_state:
+            saved = [p for p in qp_get("program", ALL).split(PROGRAM_SEP) if p in options]
+            st.session_state.doh_programs = st.session_state.doh_programs_prev = saved or [ALL]
+        st.session_state.doh_programs = [p for p in st.session_state.doh_programs if p in options] or [ALL]
+        st.segmented_control(
+            "Program", options, selection_mode="multi", key="doh_programs",
+            on_change=_programs_changed, label_visibility="collapsed",
+        )
+        sel_programs = [p for p in st.session_state.doh_programs if p != ALL]
     with c_search:
         search = st.text_input(
             "Search", value=qp_get("search", ""),
@@ -826,10 +868,12 @@ def dashboard(src: dict):
             else:
                 st.query_params["tv"] = "1"
             st.rerun()
+    with c_fs:
+        fullscreen_button()
 
     qp_set(
         week=week_choice,
-        program=sel_program,
+        program=PROGRAM_SEP.join(sel_programs) or ALL,
         search=search or "",
         stock="1" if only_with_stock else "0",
     )
@@ -838,7 +882,9 @@ def dashboard(src: dict):
     with header:
         page_header(week_number(selected_start), selected_start, last_update)
 
-    filtered = filter_table(table, sel_program, search, only_with_stock)
+    # Several Programs: keep their rows first, then the usual filter (search, stock) on them
+    by_program = table[table["Program"].isin(sel_programs)] if sel_programs else table
+    filtered = filter_table(by_program, None, search, only_with_stock)
     totals = compute_totals(filtered)
 
     # ---- KPI cards + Program chart (chart ignores the Program filter) ----
@@ -848,7 +894,7 @@ def dashboard(src: dict):
     with k_right:
         st.plotly_chart(
             program_bands_chart(filter_table(table, None, search, only_with_stock),
-                                sel_program),
+                                sel_programs),
             config={"displayModeBar": False}, width="stretch",
         )
 
@@ -878,9 +924,7 @@ def main():
     inject_css()
     if is_tv_mode():
         inject_tv_css()
-    auto_refresh()
-    src = check_sources(scan_sources())
-    dashboard(src)
+    dashboard()
 
 
 if __name__ == "__main__":

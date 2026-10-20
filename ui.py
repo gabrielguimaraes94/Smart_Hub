@@ -36,17 +36,22 @@ _DARK_VARS = " ".join(f"--hub-{k}: {v[1]};" for k, v in _TOKENS.items())
 # Plotly charts: pages leave the font color unset (st.plotly_chart's theme follows the app) and use
 # GRID_COLOR, which reads on both backgrounds. The plot area and pie borders follow the tokens via CSS.
 CHART_FONT = dict(family="Inter, sans-serif")
+# Display face for titles and big numbers; loaded by headingFont in .streamlit/config.toml
+DISPLAY_FONT = '"Barlow Semi Condensed", "Inter", sans-serif'
 GRID_COLOR = "rgba(128, 128, 128, 0.22)"
 LINE_COLOR = "#3F7CC4"  # brand mid-blue for thin lines: PRIMARY is too dark to read on the dark theme
 
 _BASE_CSS = f"""
 <style>
-:root {{ {_LIGHT_VARS} }}
+:root {{ {_LIGHT_VARS} --hub-display-font: {DISPLAY_FONT}; }}
 :root[data-hub-theme="dark"] {{ {_DARK_VARS} }}
 
 /* ---- Compact page top: content starts right under the toolbar, tighter title block ---- */
 [data-testid="stMainBlockContainer"] {{ padding-top: 3.75rem; }}  /* Streamlit default 6rem; the toolbar is 3.75rem */
-[data-testid="stMain"] h1 {{ padding: 0.1rem 0 0 0; letter-spacing: -0.01em; }}
+[data-testid="stMain"] h1 {{ padding: 0.1rem 0 0 0; letter-spacing: 0.005em; }}
+
+/* ---- Display font: big numbers and branded titles ---- */
+[data-testid="stMetricValue"] {{ font-family: var(--hub-display-font); font-weight: 600; letter-spacing: 0.01em; }}
 
 /* ---- Plotly: plot area and pie slice borders follow the theme ---- */
 .js-plotly-plot .plotly .bg {{ fill: var(--hub-surface) !important; }}
@@ -75,8 +80,10 @@ div[data-testid="stElementContainer"]:has(> [data-testid="stHtml"] > script:only
     margin-bottom: 6px;
 }}
 .hub-hero .title {{
-    font-size: 1.75rem;
-    font-weight: 650;
+    font-family: var(--hub-display-font);
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     line-height: 1.2;
     margin: 0;
 }}
@@ -111,7 +118,8 @@ div[class*="st-key-card_"]:hover {{
 div[class*="st-key-card_"] a,
 div[class*="st-key-card_"] a p,
 div[class*="st-key-card_"] a span {{
-    font-size: 1.05rem;
+    font-family: var(--hub-display-font);
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--hub-accent);
 }}
@@ -123,9 +131,10 @@ div[class*="st-key-card_"] a::after {{
 }}
 /* ---- Storage slots (e.g. coil rails): rail_title / slot_card / legend ---- */
 .rail-title {{
+    font-family: var(--hub-display-font);
     text-align: center;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     padding: 2px 0 6px 0;
     margin-bottom: 8px;
     border-bottom: 2px solid var(--hub-accent);
@@ -300,7 +309,12 @@ header[data-testid="stHeader"] { display: none !important; }
 [data-testid="stMetric"] { padding: 6px 14px !important; }
 [data-testid="stMetricValue"] { font-size: 1.4rem !important; }
 .legend { margin: 0; }
-h1 { padding-top: 0 !important; padding-bottom: 0 !important; }
+/* background refresh (st.fragment run_every): keep the old content fully visible while the new one
+   is built, instead of Streamlit's fade on "stale" elements */
+div[data-testid="stElementContainer"][data-stale="true"] { opacity: 1 !important; transition: none !important; }
+h1 { padding-top: 0 !important; padding-bottom: 0.2rem !important; line-height: 1.25 !important; }
+/* Streamlit pulls the block under a title up by 1rem; with the TV's small gaps the title would overlap it */
+[data-testid="stHeading"] [data-testid="stMarkdownContainer"] { margin-bottom: 0 !important; }
 </style>
 """
 

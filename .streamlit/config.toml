@@ -4,9 +4,11 @@
 # Custom HTML/CSS colors live in ui.py (_BASE_CSS tokens) and must match these values.
 [theme]
 font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
+# Titles in an industrial, slightly condensed face (also used for big numbers, see ui.DISPLAY_FONT)
+headingFont = "Barlow Semi Condensed:https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&display=swap, sans-serif"
 baseRadius = "medium"
-headingFontSizes = ["1.625rem", "1.25rem", "1.0625rem"]   # h1 (st.title), h2, h3
-headingFontWeights = [650, 600, 600]
+headingFontSizes = ["1.875rem", "1.375rem", "1.125rem"]   # h1 (st.title), h2, h3
+headingFontWeights = [700, 600, 600]
 metricValueFontSize = "1.75rem"                           # st.metric / kpi_card values
 metricValueFontWeight = 600
 
