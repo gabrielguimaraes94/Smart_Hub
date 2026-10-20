@@ -29,6 +29,8 @@ $env:USE_SAMPLE_DATA="1"; & "C:\Program Files\Python311\python.exe" -m streamlit
 
 Always launch through `My_Streamlit_app.py`. A page started directly runs without the navigation menu.
 
+**Visual check in a browser.** The `chrome-devtools` MCP (ecc plugin) drives a real Chrome from this session. Start the server in the background on `127.0.0.1:8599` with sample data, open each page with `new_page`/`navigate_page`, and capture it with `take_screenshot`. Use `emulate colorScheme=dark|light` to test both themes.
+
 There are no tests or linter config. To smoke-test, use `streamlit.testing.v1.AppTest.from_file(<absolute path to My_Streamlit_app.py>)`, then call `.switch_page("app_pages/<name>.py").run()` for each page. Off the corporate network every page stops at its data-loading step. Set `PYTHONIOENCODING=utf-8` when printing page titles, because they contain emoji.
 
 ## Architecture
@@ -52,9 +54,10 @@ There are no tests or linter config. To smoke-test, use `streamlit.testing.v1.Ap
   - **Fullscreen:** `ui.fullscreen_button()` binds its click handler in a `<script>`, because `st.html` strips inline `onclick`.
   - **Permanent TV:** use a kiosk browser, `chrome --kiosk "<url>/Coil_Storage?tv=1"`.
 - **All user-facing UI text is in English**: page titles, menu sections, cards, captions, footer. Conversation with the user is in Portuguese.
-- **Shared UI lives in `ui.py`.** It has `apply_base_style` (global CSS, called by the entry point), `hero`, `section_label`, `nav_card`, `page_header`, `kpi_card`, and `footer`. Theme colors and fonts are in `.streamlit/config.toml`. `ui.PRIMARY` must match its `primaryColor`.
+- **Shared UI lives in `ui.py`.** It has `apply_base_style` (global CSS, called by the entry point), `hero`, `section_label`, `nav_card`, `page_header`, `kpi_card`, and `footer`, plus the TV helpers (`is_tv_mode`, `apply_tv_style`, `tv_mode_button`, `fullscreen_button`), `sample_data_notice`, and the Coil Storage building blocks (`rail_title`, `slot_card`, `legend`). Check it before writing new HTML/CSS in a page. Theme colors and fonts are in `.streamlit/config.toml`. `ui.PRIMARY` must match its `primaryColor`.
 - **Deprecated API to avoid in Streamlit 1.66:** `use_container_width`. Use `width="stretch"` or `width="content"` instead. `st.dataframe` now defaults to `"stretch"`.
-- The finished-goods DOH report now lives only in the sibling project `../DOH_Report`, which has its own CLAUDE.md.
+- **Finished Goods DOH.** The source lives in the sibling project `../DOH_Report`, which has its own CLAUDE.md and parity tests against Power BI. `app_pages/Finish_Goods_DOH.py` is a copy of its generated single-file build (`dist/Finish_Goods_DOH.py`, made by `scripts/build_single_file.py`). Never edit the copy here: change the modules there, run its tests and build, then copy the build over.
+- `Erros/` (untracked) holds the user's screenshots of UI issues (light and dark versions). It is reference material, not source.
 
 ## Contexto do negócio
 - Hub interno da Gestamp (NAFTA) com relatórios em Streamlit.
@@ -63,6 +66,7 @@ There are no tests or linter config. To smoke-test, use `streamlit.testing.v1.Ap
 My_Streamlit_app.py - Pagina principal onde foi transformada num hub com o acesso as paginas
 Coil_Storage.py - Uma ideia para organizar o armazem de Bobinas com as posicoes de cada bobina no estoque
 EDI_VW_view.py - Nosso mais importante, com a demanda do cliente, temos um grafico para acompanhar como esta o planejamento de producao de nosso cliente 
+EDI_Compare.py - Compara as liberações EDI entre arquivos (reaproveita as funções do EDI_VW_view)
 FIFO_Report.py - Um relatorio ainda em fase de teste para confirmar o fifo na planta 
 Press_capacity.py - Calculo para saber como esta a capacidade de cada maquina   
 Receiving_mat.py - Um relatorio de recebimento 
@@ -74,3 +78,5 @@ Receiving_mat.py - Um relatorio de recebimento
 
 ## Objetivo atual
 - Modernizar o visual do hub: Streamlit atualizado, navegação nova, tema e logo da Gestamp, layout padronizado entre as páginas.
+## Progress
+@PROGRESS.md
