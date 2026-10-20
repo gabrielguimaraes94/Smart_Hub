@@ -13,7 +13,11 @@ History details are in `git log main..HEAD`.
 - [x] 2026-10-20: Finished Goods DOH in the hub (hub look made in `../DOH_Report`, parity tests green, also on the hub's pandas 2.1.1), "Finished Goods" menu section + Home card, sample data, checked light/dark/TV
 
 ## In progress
-- [ ] Validate every page in both themes (browser), then merge `modernizacao-visual` into `main`
+- [x] 2026-10-20: every page validated in both themes (browser) and with AppTest (sample data: 8/8 pages, no exceptions)
+- [ ] Merge `modernizacao-visual` into `main` and push (waiting for the user's go-ahead)
+- [ ] Deploy: the server still runs the old `Pages/` layout (see DOH_Report/Error.png: `C:\Python\PrdScript\env_3.12.7\Scripts\Pages\Finish_Goods_DOH.py`, `No module named 'app'`)
 
 ## Known issues
+- `Finish_Goods_DOH`: off the network, scanning the UNC shares takes over 60 s before the error shows (on the network it is fast)
+- `Finish_Goods_DOH`: `auto_refresh` uses `st.components.v1.html`, deprecated in Streamlit 1.66; move it to `@st.fragment(run_every=...)` like Coil Storage (change it in ../DOH_Report)
 - `EDI_VW_view`: unguarded `os.listdir` raises when the network share is unreachable (data loading; ask before changing)
