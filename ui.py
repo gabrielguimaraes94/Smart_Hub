@@ -24,6 +24,12 @@ _TOKENS = {
     "match-bg": ("#EAF1FB", "#1E3555"),
     "head-bg": ("#EAF1FB", "#1E3555"),        # table headers (Finished Goods DOH)
     "zebra": ("#F6F8FB", "#182335"),          # alternate table rows
+    "acc-blue": ("#2E64A8", "#7FA7DB"),       # Home card accents (one per section) and their tints
+    "tint-blue": ("#EAF1FB", "#1E3555"),
+    "acc-orange": ("#C25E14", "#F2B27A"),
+    "tint-orange": ("#FDEFE3", "#3A2716"),
+    "acc-green": ("#2E7D4F", "#5FBF86"),
+    "tint-green": ("#E6F3EC", "#16301F"),
     "badge-bg": ("#FFF1D6", "#3A2E12"),
     "badge-text": ("#8A5A00", "#F2C46B"),
     "badge-border": ("#F3D9A4", "#5C4A1E"),
@@ -62,72 +68,159 @@ _BASE_CSS = f"""
 :root[data-hub-theme="dark"] [data-testid="stHeaderLogo"] {{ filter: brightness(0) invert(1); }}
 div[data-testid="stElementContainer"]:has(> [data-testid="stHtml"] > script:only-child) {{ display: none; }}
 
-/* ---- Hero banner (Home) ---- */
+/* ---- Home: hero banner ---- */
 .hub-hero {{
-    background: linear-gradient(120deg, {PRIMARY} 0%, #2E5C96 100%);
-    color: #FFFFFF;
-    border-radius: 14px;
-    padding: 28px 32px;
-    margin-bottom: 8px;
-    box-shadow: 0 6px 20px rgba(32, 65, 108, 0.18);
-}}
-.hub-hero .eyebrow {{
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    opacity: 0.75;
-    margin-bottom: 6px;
-}}
-.hub-hero .title {{
-    font-family: var(--hub-display-font);
-    font-size: 2.25rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    line-height: 1.2;
-    margin: 0;
-}}
-.hub-hero .subtitle {{
-    font-size: 0.95rem;
-    opacity: 0.85;
-    margin-top: 6px;
-}}
-
-/* ---- Section label ---- */
-.hub-section {{
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--hub-muted);
-    margin: 18px 0 2px 0;
-}}
-
-/* ---- Navigation cards: st.container(border=True, key="card_...") ---- */
-div[class*="st-key-card_"] {{
     position: relative;
-    background: var(--hub-surface);
-    min-height: 160px;
-    transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    color: #FFFFFF;
+    border-radius: 16px;
+    padding: 34px 40px 30px 40px;
+    margin-bottom: 6px;
+    background: linear-gradient(115deg, #10243D 0%, {PRIMARY} 48%, #2E5C96 100%);
+    box-shadow: 0 14px 34px rgba(16, 36, 61, 0.28);
 }}
-div[class*="st-key-card_"]:hover {{
-    box-shadow: 0 10px 24px var(--hub-shadow);
-    transform: translateY(-2px);
-    border-color: var(--hub-accent);
-}}
-div[class*="st-key-card_"] a,
-div[class*="st-key-card_"] a p,
-div[class*="st-key-card_"] a span {{
-    font-family: var(--hub-display-font);
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--hub-accent);
-}}
-/* stretch the page link over the whole card so any click opens the page */
-div[class*="st-key-card_"] a::after {{
+/* fine diagonal lines, like brushed sheet metal */
+.hub-hero::before {{
     content: "";
     position: absolute;
     inset: 0;
+    background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.045) 0 2px, transparent 2px 16px);
+    pointer-events: none;
+}}
+/* big outlined plant code in the background */
+.hub-hero .mark {{
+    position: absolute;
+    right: 28%;
+    bottom: -0.32em;
+    font-family: var(--hub-display-font);
+    font-size: 11rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(255, 255, 255, 0.10);
+    pointer-events: none;
+    user-select: none;
+}}
+.hub-hero .main, .hub-hero .aside {{ position: relative; }}
+.hub-hero .eyebrow {{
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-bottom: 8px;
+}}
+.hub-hero .title {{
+    font-family: var(--hub-display-font);
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.05;
+    margin: 0;
+}}
+.hub-hero .title::after {{
+    content: "";
+    display: block;
+    width: 64px;
+    height: 4px;
+    margin-top: 12px;
+    border-radius: 2px;
+    background: #F2B27A;   /* warm accent against the blue */
+}}
+.hub-hero .subtitle {{
+    font-size: 1rem;
+    opacity: 0.88;
+    margin-top: 12px;
+    max-width: 640px;
+}}
+.hub-hero .aside {{ text-align: right; white-space: nowrap; }}
+.hub-hero .aside .day {{ font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.75; }}
+.hub-hero .aside .date {{ font-family: var(--hub-display-font); font-size: 1.9rem; font-weight: 600; line-height: 1.1; }}
+.hub-hero .aside .meta {{ font-size: 0.85rem; opacity: 0.8; margin-top: 4px; }}
+
+/* ---- Section label: number + name + rule ---- */
+.hub-section {{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--hub-display-font);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--hub-text);
+    margin: 22px 0 2px 0;
+}}
+.hub-section .num {{ color: var(--hub-accent); font-size: 1.4rem; letter-spacing: 0.02em; }}
+.hub-section .rule {{ flex: 1; height: 1px; background: var(--hub-border); }}
+
+/* ---- Navigation cards: st.container(key="card_...") holding the card HTML; the page link is
+   invisible and stretched over the whole card, so any click opens the page ---- */
+div[class*="st-key-card_"] {{ position: relative; gap: 0; }}
+div[class*="st-key-card_"] div[data-testid="stElementContainer"]:has([data-testid="stPageLink"]) {{
+    position: absolute; inset: 0; z-index: 3; opacity: 0;
+    width: 100% !important; height: 100% !important;   /* Streamlit sets a fit-content width */
+}}
+div[class*="st-key-card_"] [data-testid="stPageLink"] a {{ position: absolute; inset: 0; }}
+.hub-card {{
+    position: relative;
+    min-height: 200px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 22px 18px 22px;
+    background: var(--hub-surface);
+    border: 1px solid var(--hub-border);
+    border-top: 4px solid var(--card-accent);
+    border-radius: 12px;
+    transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+}}
+div[class*="st-key-card_"]:hover .hub-card,
+div[class*="st-key-card_"]:has(a:focus-visible) .hub-card {{
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px var(--hub-shadow);
+    border-color: var(--card-accent);
+}}
+.hub-card .top {{ display: flex; align-items: flex-start; justify-content: space-between; }}
+.hub-card .icon {{
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--card-tint); color: var(--card-accent);
+    font-size: 28px;
+}}
+.hub-card .tags {{ display: flex; gap: 6px; }}
+.hub-card .title {{
+    font-family: var(--hub-display-font);
+    font-size: 1.45rem;
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--hub-text);
+    margin-top: 14px;
+}}
+.hub-card .desc {{ color: var(--hub-muted); font-size: 0.9rem; line-height: 1.45; margin-top: 6px; }}
+.hub-card .open {{
+    margin-top: auto; padding-top: 14px;
+    display: flex; align-items: center; gap: 4px;
+    font-size: 0.85rem; font-weight: 600; color: var(--card-accent);
+}}
+.hub-card .open .hub-msym {{ font-size: 18px; transition: transform .2s ease; }}
+div[class*="st-key-card_"]:hover .hub-card .open .hub-msym {{ transform: translateX(4px); }}
+.hub-tag {{
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em;
+    border-radius: 999px; padding: 2px 8px;
+    color: var(--hub-muted); border: 1px solid var(--hub-border);
+}}
+/* Material Symbols, the icon font Streamlit already loads (the name is written as a ligature) */
+.hub-msym {{
+    font-family: "Material Symbols Rounded";
+    font-weight: normal; font-style: normal; line-height: 1;
+    letter-spacing: normal; text-transform: none; white-space: nowrap;
+    font-feature-settings: "liga"; -webkit-font-smoothing: antialiased;
 }}
 /* ---- Storage slots (e.g. coil rails): rail_title / slot_card / legend ---- */
 .rail-title {{
@@ -183,7 +276,6 @@ div[class*="st-key-card_"] a::after {{
     margin-left: 6px;
     vertical-align: middle;
 }}
-.hub-card-desc {{ color: var(--hub-muted); font-size: 0.9rem; line-height: 1.4; }}
 .hub-sample {{
     display: inline-block; font-size: 0.8rem; font-weight: 500; margin-bottom: 4px;
     color: var(--hub-badge-text); background: var(--hub-badge-bg);
@@ -231,26 +323,50 @@ def apply_base_style():
     st.html(_THEME_WATCH_JS, unsafe_allow_javascript=True)
 
 
-def hero(titulo, subtitulo=None, eyebrow=FOOTER_TEXT):
-    """Large branded banner, used on the Home page."""
+def hero(titulo, subtitulo=None, eyebrow=FOOTER_TEXT, mark="GC2", meta=None):
+    """Large branded banner for the Home page: title on the left, today's date on the right,
+    `mark` as a big outlined watermark. `meta` is an optional short line under the date."""
     sub = f'<div class="subtitle">{escape(subtitulo)}</div>' if subtitulo else ""
+    now = datetime.now()
+    meta_html = f'<div class="meta">{escape(meta)}</div>' if meta else ""
     st.html(
-        f'<div class="hub-hero"><div class="eyebrow">{escape(eyebrow)}</div>'
+        f'<div class="hub-hero"><div class="mark">{escape(mark)}</div>'
+        f'<div class="main"><div class="eyebrow">{escape(eyebrow)}</div>'
         f'<p class="title">{escape(titulo)}</p>{sub}</div>'
+        f'<div class="aside"><div class="day">{now:%A}</div><div class="date">{now:%b %d, %Y}</div>'
+        f'{meta_html}</div></div>'
     )
 
 
-def section_label(texto):
-    """Small uppercase label that groups content (e.g. the Home card sections)."""
-    st.html(f'<div class="hub-section">{escape(texto)}</div>')
+def section_label(texto, numero=None):
+    """Section heading on the Home page: optional number, uppercase name and a rule."""
+    num = f'<span class="num">{escape(numero)}</span>' if numero else ""
+    st.html(f'<div class="hub-section">{num}<span>{escape(texto)}</span><span class="rule"></span></div>')
 
 
-def nav_card(key, page, titulo, descricao, icon, badge=None):
-    """Clickable card that opens a page registered in st.navigation."""
-    with st.container(border=True, key=f"card_{key}"):
+def nav_card(key, page, titulo, descricao, icon, badge=None, accent="blue", tags=()):
+    """Clickable card that opens a page registered in st.navigation.
+
+    `icon` is a ":material/name:" string; `accent` is "blue", "orange" or "green" (the
+    --hub-acc-* / --hub-tint-* tokens). `badge` (e.g. "BETA") and `tags` (e.g. ("TV",)) are small
+    pills top right. The st.page_link is invisible and covers the card, so navigation stays client
+    side; it keeps its icon so Streamlit loads the icon font even with the sidebar hidden.
+    """
+    name = icon.removeprefix(":material/").removesuffix(":")
+    pills = "".join(f'<span class="hub-tag">{escape(t)}</span>' for t in tags)
+    if badge:
+        pills += f'<span class="hub-badge">{escape(badge)}</span>'
+    with st.container(key=f"card_{key}"):
+        st.html(
+            f'<div class="hub-card" style="--card-accent: var(--hub-acc-{accent}); '
+            f'--card-tint: var(--hub-tint-{accent})">'
+            f'<div class="top"><span class="icon"><span class="hub-msym">{escape(name)}</span></span>'
+            f'<span class="tags">{pills}</span></div>'
+            f'<div class="title">{escape(titulo)}</div>'
+            f'<div class="desc">{escape(descricao)}</div>'
+            f'<div class="open">Open <span class="hub-msym">arrow_forward</span></div></div>'
+        )
         st.page_link(page, label=titulo, icon=icon)
-        badge_html = f'<span class="hub-badge">{escape(badge)}</span>' if badge else ""
-        st.html(f'<div class="hub-card-desc">{escape(descricao)}{badge_html}</div>')
 
 
 def rail_title(texto):
