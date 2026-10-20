@@ -7,7 +7,7 @@ from pathlib import Path
 from config import EDI_FOLDER
 from datetime import datetime, timedelta
 
-from ui import footer, kpi_card, page_header
+from ui import CHART_FONT, GRID_COLOR, footer, kpi_card, page_header
 
 # Path to the folder with Excel files
 EXCEL_FOLDER = EDI_FOLDER
@@ -148,14 +148,14 @@ def create_production_chart(df, view_type='daily', start_date=None, end_date=Non
         height=560,
         barmode='stack',
         bargap=0.25,
-        yaxis=dict(rangemode='nonnegative', gridcolor='#E6EAF0', tickformat=','),
+        yaxis=dict(rangemode='nonnegative', gridcolor=GRID_COLOR, tickformat=','),
         legend=dict(
             orientation='h', yanchor='bottom', y=1.02, xanchor='left', x=0,
             font=dict(size=14), itemsizing='constant', title_text='', traceorder='normal',
         ),
         uniformtext=dict(minsize=10, mode='hide'),
         margin=dict(t=40, b=10, l=10, r=10),
-        font=dict(family='Inter, sans-serif', color='#1F2933'),
+        font=CHART_FONT,
         plot_bgcolor='#FFFFFF',
         paper_bgcolor='rgba(0,0,0,0)',
     )
@@ -187,7 +187,7 @@ def create_production_chart(df, view_type='daily', start_date=None, end_date=Non
             mode='text',
             text=[f"<b>{v:,.0f}</b>" for v in totals['Release Qty']],
             textposition='top center',
-            textfont=dict(size=12, color='#1F2933'),
+            textfont=dict(size=12),
             showlegend=False,
             hoverinfo='skip',
         ))

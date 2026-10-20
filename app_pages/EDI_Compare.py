@@ -10,7 +10,7 @@ import streamlit as st
 # so both pages read and group the EDI files the same way.
 from app_pages.EDI_VW_view import (CAR_MODELS, EXCEL_FOLDER, get_file_creation_date,
                                    get_week_number, load_excel_file, process_data)
-from ui import PRIMARY, footer, kpi_card, page_header
+from ui import CHART_FONT, GRID_COLOR, PRIMARY, footer, kpi_card, page_header
 
 BASE_COLOR = "#A9B4C2"  # grey for the base (older) file, Gestamp blue for the compare file
 
@@ -135,7 +135,7 @@ def main():
     ))
     heat.update_layout(
         height=90 + 48 * len(model_order), margin=dict(t=10, b=10, l=10, r=10),
-        font=dict(family='Inter, sans-serif', color='#1F2933'),
+        font=CHART_FONT,
         plot_bgcolor='#FFFFFF', paper_bgcolor='rgba(0,0,0,0)',
         yaxis=dict(autorange='reversed'), xaxis=dict(side='top'),
     )
@@ -154,11 +154,11 @@ def main():
         ))
     bars.update_layout(
         barmode='group', height=440, bargap=0.25,
-        yaxis=dict(title="Release quantity (pcs)", gridcolor='#E6EAF0', tickformat=',',
+        yaxis=dict(title="Release quantity (pcs)", gridcolor=GRID_COLOR, tickformat=',',
                    range=[0, max(totals.max().max(), 1) * 1.12]),
         legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='left', x=0),
         margin=dict(t=40, b=10, l=10, r=10),
-        font=dict(family='Inter, sans-serif', color='#1F2933'),
+        font=CHART_FONT,
         plot_bgcolor='#FFFFFF', paper_bgcolor='rgba(0,0,0,0)',
     )
     st.plotly_chart(bars, width="stretch")

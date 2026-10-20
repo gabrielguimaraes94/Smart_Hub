@@ -171,7 +171,8 @@ def live_view(query):
                 st.success(f"**{len(found)}** match(es) for “{query}”: " + ", ".join(found), icon=":material/location_on:")
             else:
                 st.warning(f"No coil matches “{query}”.", icon=":material/search_off:")
-        legend([("Occupied", "#2E7D4F"), ("Empty", "#C5CCD5"), ("Search match", "#EAF1FB; box-shadow: inset 0 0 0 2px #20416C")])
+        legend([("Occupied", "var(--hub-ok)"), ("Empty", "var(--hub-empty-border)"),
+                ("Search match", "var(--hub-match-bg); box-shadow: inset 0 0 0 2px var(--hub-accent)")])
         create_rail_layout(df, rail_positions.keys(), DISPLAY_POSITIONS, query)
 
     footer()

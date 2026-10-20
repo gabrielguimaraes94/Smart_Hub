@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from config import EDI_FOLDER, PRESS_MASTER_DATA_FILE
-from ui import PRIMARY, footer, kpi_card, page_header
+from ui import CHART_FONT, GRID_COLOR, PRIMARY, footer, kpi_card, page_header
 
 # Chart colors
 AUTO_COLOR = PRIMARY        # volume from the EDI
@@ -506,7 +506,7 @@ def create_combined_machine_chart(saturation_data, machine, selected_year_weeks=
     )
 
     text_color = '#1F2933'
-    grid_color = '#E6EAF0'
+    grid_color = GRID_COLOR
 
     # Update layout
     fig.update_layout(
@@ -538,7 +538,7 @@ def create_combined_machine_chart(saturation_data, machine, selected_year_weeks=
         height=560,
         margin=dict(t=40, b=110, l=50, r=70),
         hovermode="x unified",
-        font=dict(family='Inter, sans-serif', color=text_color),
+        font=CHART_FONT,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='#FFFFFF',
         showlegend=True
@@ -601,7 +601,7 @@ def create_combined_machine_chart(saturation_data, machine, selected_year_weeks=
         yref="paper",
         text="<b>Shifts per week</b>",
         showarrow=False,
-        font=dict(size=13, color=text_color),
+        font=dict(size=13),  # theme text color; text_color is only for the labels on the light shift boxes
         align="center"
     )
 

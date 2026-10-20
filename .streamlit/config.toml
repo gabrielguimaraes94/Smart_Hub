@@ -1,12 +1,8 @@
 # Corporate theme for the Smart Hub (read when `streamlit run` is started from this folder).
 # Server settings stay in ~/.streamlit/config.toml.
+# Light and dark variants: the app follows the OS setting and the user can switch in Settings.
+# Custom HTML/CSS colors live in ui.py (_BASE_CSS tokens) and must match these values.
 [theme]
-base = "light"
-primaryColor = "#20416C"              # Gestamp blue (sampled from the logo)
-backgroundColor = "#F8F9FA"
-secondaryBackgroundColor = "#EEF2F7"
-textColor = "#1F2933"
-borderColor = "#D9DEE5"
 font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
 baseRadius = "medium"
 headingFontSizes = ["1.875rem", "1.375rem", "1.125rem"]   # h1 (st.title), h2, h3
@@ -14,5 +10,22 @@ headingFontWeights = [650, 600, 600]
 metricValueFontSize = "1.75rem"                           # st.metric / kpi_card values
 metricValueFontWeight = 600
 
-[theme.sidebar]
+[theme.light]
+primaryColor = "#20416C"              # Gestamp blue (sampled from the logo); = ui.PRIMARY
+backgroundColor = "#F8F9FA"
+secondaryBackgroundColor = "#EEF2F7"
+textColor = "#1F2933"
+borderColor = "#D9DEE5"
+
+[theme.light.sidebar]
 backgroundColor = "#FFFFFF"
+
+[theme.dark]
+primaryColor = "#3A6DB0"              # Gestamp blue, lighter so buttons and focus rings stand out on dark
+backgroundColor = "#0E1621"
+secondaryBackgroundColor = "#1A2533"
+textColor = "#E4E9F0"
+borderColor = "#2C3A4D"
+
+[theme.dark.sidebar]
+backgroundColor = "#111C2A"

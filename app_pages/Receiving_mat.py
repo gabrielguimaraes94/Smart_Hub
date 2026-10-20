@@ -6,13 +6,13 @@ import os
 from datetime import datetime, timedelta
 
 from config import RECEIVING_FOLDER
-from ui import PRIMARY, footer, kpi_card, page_header
+from ui import CHART_FONT, GRID_COLOR, LINE_COLOR, PRIMARY, footer, kpi_card, page_header
 
 # Supplier donut colors: Gestamp blues first, then neutral tones; "Others" in grey
 SUPPLIER_COLORS = ['#20416C', '#3F7CC4', '#93B9E6', '#D9701E', '#F2B27A',
                    '#2E7D4F', '#8BBF5A', '#6B7A8F', '#B8C2CF', '#E9B949']
 OTHERS_COLOR = '#D9DEE5'
-CHART_LAYOUT = dict(font=dict(family='Inter, sans-serif', color='#1F2933'),
+CHART_LAYOUT = dict(font=CHART_FONT,
                     plot_bgcolor='#FFFFFF', paper_bgcolor='rgba(0,0,0,0)',
                     margin=dict(t=20, b=10, l=10, r=10))
 
@@ -190,13 +190,13 @@ else:
         # Line chart
         fig_line = go.Figure(go.Scatter(
             x=deliveries_by_day['Delivery_Date'], y=deliveries_by_day['Total_Deliveries'],
-            mode='lines+markers', line=dict(color=PRIMARY, width=2), marker=dict(size=6),
-            fill='tozeroy', fillcolor='rgba(32, 65, 108, 0.08)',
+            mode='lines+markers', line=dict(color=LINE_COLOR, width=2), marker=dict(size=6),
+            fill='tozeroy', fillcolor='rgba(63, 124, 196, 0.12)',
             hovertemplate="%{x|%b %d, %Y}<br>%{y:,} deliveries<extra></extra>",
         ))
         fig_line.update_layout(**CHART_LAYOUT, height=380,
-                               yaxis=dict(title="Deliveries", gridcolor='#E6EAF0', rangemode='tozero'),
-                               xaxis=dict(gridcolor='#F1F3F5'))
+                               yaxis=dict(title="Deliveries", gridcolor=GRID_COLOR, rangemode='tozero'),
+                               xaxis=dict(gridcolor=GRID_COLOR))
         st.plotly_chart(fig_line, width="stretch")
 
     # Delivery details table
@@ -285,7 +285,7 @@ else:
             hovertemplate="%{x}<br>%{y} deliveries<br>%{marker.color:,} pcs<extra></extra>",
         ))
         fig_top_materials.update_layout(**CHART_LAYOUT, height=400,
-                                        yaxis=dict(title="Number of deliveries", gridcolor='#E6EAF0',
+                                        yaxis=dict(title="Number of deliveries", gridcolor=GRID_COLOR,
                                                    range=[0, max(top_materials['Delivery_Count'].max(), 1) * 1.15]))
         st.plotly_chart(fig_top_materials, width="stretch")
 

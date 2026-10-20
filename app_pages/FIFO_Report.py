@@ -6,7 +6,7 @@ import glob
 import plotly.graph_objects as go
 
 from config import FIFO_FOLDER
-from ui import footer, kpi_card, page_header
+from ui import CHART_FONT, GRID_COLOR, footer, kpi_card, page_header
 
 AGE_BANDS = ["<30", "30-60", "60-90", "90-120", ">120"]
 AGE_LABELS = {"<30": "< 30 days", "30-60": "30–60 days", "60-90": "60–90 days",
@@ -159,7 +159,7 @@ def live_view():
         colg1, colg2 = st.columns(2)
         names = [AGE_LABELS[b] for b in AGE_BANDS]
         colors = [AGE_COLORS[b] for b in AGE_BANDS]
-        layout = dict(font=dict(family='Inter, sans-serif', color='#1F2933'),
+        layout = dict(font=CHART_FONT,
                       plot_bgcolor='#FFFFFF', paper_bgcolor='rgba(0,0,0,0)', height=380)
 
         with colg1:
@@ -170,7 +170,7 @@ def live_view():
                 hovertemplate="%{x}<br>%{y:,} labels<extra></extra>",
             ))
             fig_bar.update_layout(**layout, margin=dict(t=20, b=10, l=10, r=10),
-                                  yaxis=dict(title="Labels", gridcolor='#E6EAF0',
+                                  yaxis=dict(title="Labels", gridcolor=GRID_COLOR,
                                              range=[0, max(faixa_counts.max(), 1) * 1.15]))
             st.plotly_chart(fig_bar, width="stretch")
 
