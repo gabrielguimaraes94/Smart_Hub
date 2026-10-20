@@ -5,7 +5,7 @@
 [theme]
 font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
 baseRadius = "medium"
-headingFontSizes = ["1.875rem", "1.375rem", "1.125rem"]   # h1 (st.title), h2, h3
+headingFontSizes = ["1.625rem", "1.25rem", "1.0625rem"]   # h1 (st.title), h2, h3
 headingFontWeights = [650, 600, 600]
 metricValueFontSize = "1.75rem"                           # st.metric / kpi_card values
 metricValueFontWeight = 600

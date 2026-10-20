@@ -44,6 +44,10 @@ _BASE_CSS = f"""
 :root {{ {_LIGHT_VARS} }}
 :root[data-hub-theme="dark"] {{ {_DARK_VARS} }}
 
+/* ---- Compact page top: content starts right under the toolbar, tighter title block ---- */
+[data-testid="stMainBlockContainer"] {{ padding-top: 3.75rem; }}  /* Streamlit default 6rem; the toolbar is 3.75rem */
+[data-testid="stMain"] h1 {{ padding: 0.1rem 0 0 0; letter-spacing: -0.01em; }}
+
 /* ---- Plotly: plot area and pie slice borders follow the theme ---- */
 .js-plotly-plot .plotly .bg {{ fill: var(--hub-surface) !important; }}
 .js-plotly-plot .plotly .pielayer .slice path.surface {{ stroke: var(--hub-page-bg) !important; }}
